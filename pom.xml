@@ -6,6 +6,7 @@
   <version>1.0-SNAPSHOT</version>
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
+    <exec.mainClass>quizrace.Main</exec.mainClass>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   <dependencies>
@@ -33,7 +34,7 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.5.0</version>
         <configuration>
-          <mainClass>quizrace.Main</mainClass>
+          <mainClass>${exec.mainClass}</mainClass>
           <cleanupDaemonThreads>false</cleanupDaemonThreads>
         </configuration>
       </plugin>
