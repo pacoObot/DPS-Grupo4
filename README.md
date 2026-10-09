@@ -1,41 +1,239 @@
-# QuizRace
+# QuizRace — DPS Grupo 4
 
-Projecto académico em Java para um quiz de 2 a 4 jogadores. Inclui a versão sequencial no terminal e uma demonstração de comunicação TCP entre servidor e clientes. Não utiliza frameworks de aplicação; JUnit é usado apenas nos testes.
+Projecto académico em Java 21: quiz local sequencial, jogo TCP para 2–4 jogadores, execução concorrente com ExecutorService e comparação de desempenho com carga simulada. Interface de terminal, Maven e JUnit; sem frameworks de aplicação, base de dados ou interface gráfica.
 
-## Executar
+## Arquitectura
 
-Requisitos: JDK 17 ou superior e Apache Maven 3.9 ou superior disponíveis no PATH.
+```text
+QuizClient / ClienteSimulado (2–4 jogadores)
+                  |
+                  | TCP — linhas UTF-8
+                  v
+             QuizServer
+                  |
+           ExecutorService
+                  |
+           ClienteHandler
+                  |
+               SalaQuiz ---- coordenador único
+                  |
+        Rodada + CountDownLatch
+                  |
+ Pergunta / Resposta / Jogador / CalculadoraPontuacao
+                  |
+            RankingService
+```
+
+- **Sequencial local:** cada jogador responde a todas as perguntas antes do seguinte. A thread auxiliar de EntradaConsole permite aplicar o timeout ao teclado; não processa jogadores em paralelo.
+- **Jogo em rede:** handlers recebem mensagens em simultâneo, enquanto SalaQuiz coordena perguntas comuns. O servidor decide tempo, correcção, pontuação e ranking.
+- **Benchmark:** QuizSequencial e QuizParalelo executam exactamente a mesma JogadorTask com dados imutáveis reproduzíveis. Não usa TCP, teclado ou atrasos humanos.
+
+TCP fornece um fluxo de bytes fiável e ordenado, mas não delimita mensagens. O protocolo usa uma mensagem por linha e `|` entre campos. Cada leitor impõe um máximo de 2048 caracteres antes de construir a mensagem completa.
+
+## Requisitos e compilação
+
+- JDK **21** completo (incluindo `javac`).
+- Maven 3.9 ou superior.
+- Docker Engine e Docker Compose para a demonstração em containers.
+
+Abra a pasta que contém `pom.xml`:
 
 ```bash
-cd QuizRace
 mvn clean compile
+mvn test
+mvn package
+```
+
+O JAR gerado é `target/quizrace.jar`. O projecto não tem dependências externas em runtime. Os testes de integração usam portas livres (`ServerSocket(0)`); é necessário permitir sockets locais no ambiente de testes.
+
+## Menu e versão local
+
+```bash
 mvn exec:java
 ```
 
-Para executar os testes:
-
-```bash
-mvn test
+```text
+1 - Jogar versão local sequencial
+2 - Iniciar servidor
+3 - Iniciar cliente
+4 - Executar benchmark
+0 - Sair
 ```
 
-Também pode importar `pom.xml` numa IDE e executar `quizrace.Main`, ou, depois de compilar:
+O menu inicia o modo escolhido e termina quando esse modo acaba. Para entrar directamente na versão local:
 
 ```bash
-java -cp target/classes quizrace.Main
+mvn exec:java -Dexec.args="--local"
 ```
 
-Registe entre 2 e 4 jogadores com nomes diferentes. Cada jogador responde a todas as perguntas antes de passar a vez ao seguinte. Escreva A, B, C ou D e prima Enter. A contagem começa depois da apresentação das alternativas. Uma entrada inválida permite nova tentativa dentro do mesmo prazo.
+São aceites 2–4 nomes diferentes. Responda A, B, C ou D e prima Enter. Entradas inválidas não reiniciam o prazo. No terminal local, uma linha introduzida depois de um timeout pode ser lida pela pergunta seguinte; responda apenas quando solicitado.
 
-## Regras
+## Servidor e dois clientes humanos
 
-- Limite de 15 segundos por pergunta; tempo esgotado conta como resposta errada e 15 segundos no tempo do jogador.
-- Resposta errada: 0 pontos.
-- Resposta correcta: `max(10, 100 - tempoEmSegundos * 5)`; as fracções de segundo são preservadas no cálculo. A apresentação usa duas casas decimais.
-- Com o prazo actual, uma resposta correcta vale pelo menos cerca de 25 pontos. O mínimo de 10 está implementado para permitir futuros limites diferentes.
-- Ranking por pontuação decrescente; desempate pelo menor tempo total e, depois, pelo nome. As posições são ordinais.
-- O fim da entrada interrompe o jogo com uma mensagem.
+Execute os comandos em terminais separados, todos na pasta do projecto.
 
-Uma thread auxiliar daemon lê o terminal e entrega linhas a uma fila. Isto permite aplicar o limite de tempo mesmo quando ninguém prime Enter. A lógica do quiz e os jogadores continuam sequenciais. O terminal não permite identificar a pergunta a que uma linha tardia pertence: após um timeout, a próxima linha será considerada resposta à pergunta que estiver activa. Responda apenas quando solicitado e não antecipe respostas.
+Terminal 1:
+
+```bash
+mvn exec:java -Dexec.mainClass="quizrace.server.QuizServer"
+```
+
+Terminais 2 e 3:
+
+```bash
+mvn exec:java -Dexec.mainClass="quizrace.client.QuizClient"
+```
+
+Introduza um nome diferente em cada cliente. Com dois jogadores, a sala inicia uma contagem de 3, 2, 1 e GO. Até ao GO podem entrar mais dois. Se alguém sair e restar menos de dois durante a contagem, a sala volta a aguardar.
+
+Todos recebem as mesmas **10 perguntas**. Aguarde as quatro alternativas e o anúncio de tempo; escreva apenas a letra, sem prefixos de protocolo. A recepção de mensagens continua activa enquanto o cliente espera pelo teclado. Use `/sair` para desligar ou Ctrl+C para encerrar o processo.
+
+Cada rodada termina quando todos responderem/desistirem ou quando os 15 segundos se esgotarem. Os resultados individuais e a pontuação acumulada são enviados no fecho da rodada, antes da pergunta seguinte. No fim, todos recebem ranking e vencedor; os sockets dos jogadores fecham. O servidor continua a aceitar ligações, mas informa que a sala está finalizada. Nesta versão, reinicie o servidor para jogar outra partida.
+
+Outro hostname/porta:
+
+```bash
+mvn exec:java -Dexec.mainClass="quizrace.server.QuizServer" -Dexec.args="6000"
+mvn exec:java -Dexec.mainClass="quizrace.client.QuizClient" -Dexec.args="192.168.1.10 6000"
+```
+
+Ou execute directamente o JAR:
+
+```bash
+java -cp target/quizrace.jar quizrace.server.QuizServer
+java -cp target/quizrace.jar quizrace.client.QuizClient localhost 5000
+```
+
+ConfiguracaoRede resolve **argumento > variável de ambiente > padrão**. Variáveis: `QUIZ_HOST` e `QUIZ_PORT`; padrões: `localhost` e `5000`. O servidor recebe apenas a porta por argumento e escuta nas interfaces disponíveis. A porta deve estar acessível na rede. Porta ocupada gera uma mensagem de erro.
+
+## Regras e modelo
+
+- Resposta correcta: `max(10, 100 - tempoEmSegundos * 5)`.
+- Resposta errada ou timeout: zero. Com 15 segundos, uma resposta correcta vale aproximadamente 25–100 pontos.
+- Fracções de segundo são preservadas; a apresentação arredonda para duas casas. Valores visualmente iguais podem desempatar pelos valores internos.
+- Jogador mantém pontuação, correctas, erradas, timeouts, tempo total/última resposta e ligação activa. **Timeouts são um subconjunto das erradas**, preservando o comportamento anterior.
+- Desligar durante a partida regista timeout nas perguntas pendentes e seguintes; o jogador permanece no ranking. Desligar antes do jogo remove-o da sala.
+- Ranking: maior pontuação, menor tempo total, mais correctas e, finalmente, nome para desempate determinístico. O primeiro é declarado vencedor, incluindo jogadores que tenham saído.
+- Tempo é medido pelo servidor com System.nanoTime, após enviar enunciado/opções e ao anunciar o prazo. Inclui latência de rede e escalonamento; não depende do relógio do cliente.
+
+As perguntas são carregadas de `src/main/resources/perguntas.txt`. O identificador positivo é atribuído pela ordem no ficheiro. Formato:
+
+```text
+enunciado|alternativa A|alternativa B|alternativa C|alternativa D|letra correcta|categoria
+```
+
+Categoria opcional, mantendo o último separador. Linhas vazias e começadas por `#` são ignoradas. Recompile após editar o ficheiro.
+
+## ExecutorService e sincronização
+
+QuizServer utiliza um pool limitado a oito atendimentos (quatro jogadores e ligações em identificação), sem fila ilimitada de sockets. Não cria manualmente uma thread por cliente. Ligações excedentes são fechadas; nomes ainda não enviados têm timeout de leitura de 60 segundos.
+
+SalaQuiz utiliza um executor agendado com um único coordenador para a contagem e as rodadas. A entrada/saída e o estado da sala são protegidos por secções críticas curtas. Cada Rodada tem um **CountDownLatch**, inicializado com o número de jogadores. A inserção da resposta e a verificação de duplicação são atómicas num método synchronized. Cada jogador reduz a contagem uma única vez. O coordenador espera só até ao prazo restante, encerra a rodada e transforma ausências em timeout.
+
+Os handlers **não alteram pontuação**. Apenas o coordenador aplica os resultados, e só depois produz o ranking. No benchmark, cada tarefa cria e possui o seu próprio Jogador; Future.get estabelece a publicação segura dos resultados. Não se aplica synchronized a todos os getters/setters.
+
+O shutdown hook fecha o ServerSocket e os sockets dos clientes (desbloqueando leituras), interrompe os executores e aguarda a sua terminação. Não se usa Thread.sleep para sincronizar rodadas. A única espera desse tipo está nas tentativas de ligação do cliente simulado.
+
+## Protocolo
+
+| Mensagem | Utilização |
+| --- | --- |
+| `NOME|Ana` | Primeira mensagem do cliente; nome de 1–40 caracteres, sem controlos ou separadores |
+| `ENTROU|Ana` | Entrada aceite |
+| `JOGADORES|2|4` | Ocupação da sala |
+| `AGUARDAR|Texto` | Sala de espera |
+| `INICIO|3`, `INICIO|2`, `INICIO|1`, `INICIO|GO` | Contagem |
+| `PERGUNTA|1|Enunciado` | Pergunta com identificador |
+| `OPCAO|A|Texto` | Alternativa |
+| `TEMPO|15` | Abrir o prazo da resposta |
+| `RESPOSTA|1|B` | Resposta identificada, enviada pelos clientes actuais |
+| `RESULTADO|CORRECTO|95.00` | Também admite ERRADO e TIMEOUT |
+| `PONTUACAO|195.00` | Total do jogador |
+| `RANKING|1|Ana|450.00|5|5|1|42.50` | Posição, nome, pontos, correctas, erradas, timeouts, tempo total |
+| `VENCEDOR|Ana|450.00` | Vencedor |
+| `ERRO|Texto` | Falha de validação |
+| `FIM|Partida terminada` | Encerramento normal |
+| `MENSAGEM|Texto` | Informação; o servidor mantém a confirmação de mensagens de teste |
+
+O parser preserva os formatos antigos PERGUNTA sem ID, RESULTADO com TEMPO_ESGOTADO e RANKING reduzido. **RESPOSTA sem ID é aceite apenas na primeira pergunta da sala.** A partir daí exige-se ID para impedir que mensagens atrasadas ou duplicadas afectem outra rodada. Os clientes actuais enviam sempre o ID.
+
+Separadores `|` e controlos não são permitidos dentro de campos. Não há JSON nem escape. Mensagens inválidas recebem ERRO sem derrubar o servidor; falhas de identificação, linhas excessivas ou desconexões encerram apenas o cliente afectado. Nomes duplicados, sala cheia e entrada após GO são rejeitados.
+
+## Benchmark
+
+```bash
+mvn exec:java -Dexec.mainClass="quizrace.benchmark.BenchmarkRunner"
+```
+
+Parâmetros opcionais: threads, medições, iterações SHA-256 por pergunta:
+
+```bash
+mvn exec:java -Dexec.mainClass="quizrace.benchmark.BenchmarkRunner" -Dexec.args="4 5 1000"
+```
+
+São medidos 10, 100, 500 e 1000 jogadores, cada um com 10 perguntas. Uma semente fixa gera as mesmas respostas e tempos simulados para ambas as versões. A carga de CPU artificial repete SHA-256; os checksums são consumidos e comparados, além de pontuação, tempos e contadores.
+
+Há um aquecimento de cada versão e cinco medições por padrão. A ordem alterna entre sequencial/paralela. O pool é reutilizado e aquecido; criação inicial do pool, geração dos dados, leitura de recursos e impressão não entram nas medições. Criação das tarefas, execução e recolha dos resultados entram. Cada execução cria novos Jogador, evitando acumular pontuações entre medições.
+
+```text
+speedup = média sequencial / média paralela
+eficiência = speedup / número de threads
+```
+
+Os tempos medidos são de processamento, não os tempos fictícios de resposta usados para calcular pontos. Não se medem jogadores humanos nem latência TCP. Trata-se de uma demonstração académica, não de um microbenchmark JMH: JIT, GC, frequência de CPU e outros processos influenciam os resultados. Não há garantia de aceleração para cargas pequenas.
+
+Resultados realmente obtidos estão em [docs/VALIDACAO.md](docs/VALIDACAO.md).
+
+## Clientes simulados
+
+O bot liga por TCP, regista o nome, lê as perguntas e agenda respostas sem bloquear a recepção. Usa o banco de perguntas local para acertar com a probabilidade configurada; perguntas desconhecidas recebem uma alternativa aleatória. Nunca envia pontuação nem decide o resultado oficial.
+
+```bash
+mvn exec:java -Dexec.mainClass="quizrace.client.ClienteSimulado" -Dexec.args="localhost 5000 BOT-1 100 500 0.75"
+```
+
+Ordem: host, porta, nome, atraso mínimo em ms, atraso máximo em ms, probabilidade de acerto (0–1). Variáveis equivalentes: `QUIZ_HOST`, `QUIZ_PORT`, `QUIZ_NOME`, `QUIZ_ATRASO_MIN_MS`, `QUIZ_ATRASO_MAX_MS`, `QUIZ_ACERTO`. Os argumentos têm prioridade. Defaults: BOT-1, 100–500 ms, 0.75. Use nomes diferentes. A probabilidade 1 acerta sempre no banco conhecido; 0 escolhe sempre uma alternativa errada. Atrasos superiores a 15 segundos demonstram timeout.
+
+## Docker e Compose
+
+```bash
+docker compose build
+docker compose up
+```
+
+O Dockerfile usa duas etapas: Maven/JDK 21 compila **e executa os testes**; a imagem final contém apenas o JRE 21 e o JAR, executados por um utilizador sem privilégios. Compose cria uma rede comum, servidor (`server:5000`) e quatro bots BOT-1…BOT-4. Os bots tentam novamente se o servidor ainda não estiver pronto.
+
+No fim, os quatro bots terminam com código zero e o servidor continua activo com a sala finalizada. Para encerrar e repetir:
+
+```bash
+docker compose down
+docker compose up
+```
+
+Execução em segundo plano e consulta de resultados:
+
+```bash
+docker compose up -d
+docker compose logs -f
+docker compose ps -a
+docker compose down
+```
+
+Só servidor em Docker, com clientes humanos fora dele:
+
+```bash
+docker compose up server
+# Noutro terminal:
+mvn exec:java -Dexec.mainClass="quizrace.client.QuizClient"
+```
+
+Se a porta 5000 do computador estiver ocupada:
+
+```bash
+QUIZ_PUBLISH_PORT=6000 docker compose up
+```
+
+Os bots continuam a usar `server:5000`; clientes no computador usam `localhost 6000`. O nome `server` só é resolvido dentro da rede Compose. Não use `--abort-on-container-exit` para observar todos os rankings, pois o primeiro bot a terminar pode parar os restantes.
 
 ## Estrutura e responsabilidades
 
@@ -43,15 +241,16 @@ Uma thread auxiliar daemon lê o terminal e entrega linhas a uma fila. Isto perm
 QuizRace/
 ├── pom.xml
 ├── README.md
+├── Dockerfile
+├── docker-compose.yml
+├── .dockerignore
 ├── .gitignore
+├── docs/VALIDACAO.md
 └── src/
     ├── main/
     │   ├── java/quizrace/
     │   │   ├── Main.java
-    │   │   ├── model/
-    │   │   │   ├── Jogador.java
-    │   │   │   ├── Pergunta.java
-    │   │   │   └── Resposta.java
+    │   │   ├── model/{Jogador,Pergunta,Resposta}.java
     │   │   ├── service/
     │   │   │   ├── QuizSequencial.java
     │   │   │   ├── QuizParalelo.java
@@ -60,144 +259,52 @@ QuizRace/
     │   │   │   └── RankingService.java
     │   │   ├── server/
     │   │   │   ├── QuizServer.java
-    │   │   │   └── ClienteHandler.java
-    │   │   ├── client/
-    │   │   │   └── QuizClient.java
-    │   │   ├── network/
-    │   │   │   ├── ConfiguracaoRede.java
-    │   │   │   └── ProtocoloMensagem.java
-    │   │   ├── parallel/
-    │   │   │   └── JogadorTask.java
-    │   │   └── util/
-    │   │       ├── Cronometro.java
-    │   │       ├── MedidorDesempenho.java
-    │   │       └── EntradaConsole.java
+    │   │   │   ├── ClienteHandler.java
+    │   │   │   ├── SalaQuiz.java
+    │   │   │   ├── Rodada.java
+    │   │   │   ├── EstadoSala.java
+    │   │   │   └── CanalJogador.java
+    │   │   ├── client/{QuizClient,ClienteSimulado}.java
+    │   │   ├── network/{ConfiguracaoRede,ProtocoloMensagem}.java
+    │   │   ├── parallel/JogadorTask.java
+    │   │   ├── benchmark/{BenchmarkRunner,JogadorSimulado,ResultadoBenchmark}.java
+    │   │   └── util/{Cronometro,MedidorDesempenho,EntradaConsole}.java
     │   └── resources/perguntas.txt
     └── test/java/quizrace/
         ├── QuizRaceTest.java
-        └── ProtocoloMensagemTest.java
+        ├── ProtocoloMensagemTest.java
+        ├── JogoConcorrenteTest.java
+        ├── TcpIntegrationTest.java
+        ├── BenchmarkTest.java
+        └── ClienteSimuladoTest.java
 ```
 
-| Classe | Responsabilidade |
-| --- | --- |
-| Main | Registar jogadores, iniciar o jogo e apresentar o ranking. |
-| Jogador | Guardar nome, pontuação, contadores e tempos total e da última resposta. |
-| Pergunta | Validar quatro alternativas e verificar a resposta e o prazo; dados imutáveis. |
-| Resposta | Representar alternativa, tempo e indicação de timeout; dados imutáveis. |
-| CalculadoraPontuacao | Aplicar a fórmula de pontos. |
-| GerenciadorPerguntas | Carregar e validar as perguntas do recurso UTF-8. |
-| QuizSequencial | Processar cada jogador e cada pergunta, medindo e registando resultados. |
-| RankingService | Produzir uma lista ordenada sem alterar a lista original. |
-| Cronometro | Medir intervalos com o relógio monotónico System.nanoTime. |
-| MedidorDesempenho | Medir a duração de uma tarefa. |
-| EntradaConsole | Ler o terminal através de uma fila e permitir espera com prazo. |
-| QuizParalelo | Classe base vazia, reservada para a segunda etapa. |
-| JogadorTask | Classe base vazia, reservada para a futura tarefa de um jogador. |
+Main apresenta o menu. Models representam os dados. Services carregam perguntas, executam os modos e calculam os resultados. SalaQuiz coordena a partida, Rodada protege as respostas, ClienteHandler trata a ligação e CanalJogador permite testar a sala sem sockets. Network valida configuração e protocolo. BenchmarkRunner mede; JogadorSimulado fornece a carga; JogadorTask executa-a; ResultadoBenchmark calcula os indicadores. Os utilitários tratam tempo e entrada do terminal.
 
-`Pergunta` e `Resposta` usam records, disponíveis em Java 17. Para adicionar perguntas, edite `src/main/resources/perguntas.txt` e volte a compilar. Formato de cada linha:
+## Testes e evolução
 
-```text
-enunciado|alternativa A|alternativa B|alternativa C|alternativa D|letra correcta|categoria
-```
+Os testes originais foram preservados; apenas a quantidade esperada de perguntas passou de 3 para 10. A suite acrescenta modelo, desempate, sala cheia, nomes duplicados, regresso à espera, prazo com relógio injectado, 100 tentativas concorrentes de resposta duplicada, protocolo/limites, equivalência de benchmark e integração TCP em porta livre.
 
-A categoria pode ficar vazia, mantendo o último separador. Não utilize `|` dentro dos textos. Linhas vazias e linhas começadas por `#` são ignoradas.
+A implementação foi guardada em commits incrementais: base TCP, jogo sincronizado, benchmark e execução em containers. Consulte `git log --oneline` e [a validação](docs/VALIDACAO.md).
 
-## Segunda etapa e comparação
+## Limitações e próximas melhorias
 
-`QuizParalelo` e `JogadorTask` ainda não executam tarefas. A segunda etapa deverá usar ExecutorService, uma tarefa por jogador e aguardar a conclusão antes de ler os resultados. Cada tarefa poderá ser dona exclusiva do seu Jogador, evitando sincronização desnecessária. Actualmente Jogador não permite utilização concorrente segura por várias tarefas.
+- Uma sala e uma partida por processo de servidor; sem reconexão, múltiplas salas ou persistência. Reinicie para nova partida.
+- Sem TLS/autenticação; apropriado para ambiente académico controlado. O limite de linhas e clientes não substitui protecção contra abuso. Escritas TCP são bloqueantes; um cliente que nunca leia pode atrasar a distribuição.
+- Clientes antigos de uma só pergunta não completam o novo jogo; devem usar o cliente actual com identificadores.
+- A contagem começa ao atingir dois jogadores; os restantes precisam de entrar antes do GO.
+- O tempo de rede inclui latência; não representa apenas o tempo de raciocínio humano.
+- O benchmark é de carga CPU simulada, separado do desempenho do jogo interactivo.
+- Futuro: novas salas, recuperação de ligação, saída de rede com prazo, autenticação e medições mais rigorosas com JMH.
 
-Um único terminal partilhado não oferece entrada humana simultânea independente. Para demonstrar concorrência e comparar tempos de forma justa, a segunda etapa deve usar respostas simuladas reproduzíveis, com as mesmas perguntas, respostas e atrasos nas duas versões, ou canais independentes por jogador.
+### Ferramentas temporárias desta sessão
 
-O tempo sequencial apresentado inclui a espera pelas respostas e a saída das perguntas, mas exclui registo, carregamento e impressão do ranking. Ainda não é um benchmark de processamento nem existe medição da versão paralela.
-
-## Validação
-
-Os testes verificam a fórmula, os dados de Jogador e Pergunta, o prazo de leitura, o carregamento do recurso, a ordenação e uma partida sequencial com entrada em memória. Não dependem de introdução manual.
-
-### Ambiente usado nesta entrega
-
-O ambiente original tinha Java para execução, mas não tinha Maven nem JDK completo. A validação utilizou Maven 3.9.9 e JDK 21 temporários em `/tmp`, sem alterar o sistema. Enquanto essas pastas existirem, pode executar a partir de `QuizRace/`:
+O computador não tinha Maven nem JDK completo. Para repetir as validações enquanto as pastas temporárias existirem:
 
 ```bash
 export JAVA_HOME=/tmp/quizrace-jdk
 export PATH="/tmp/apache-maven-3.9.9/bin:$JAVA_HOME/bin:$PATH"
-mvn -Dmaven.repo.local=/tmp/quizrace-m2 clean compile
 mvn -Dmaven.repo.local=/tmp/quizrace-m2 test
-mvn -Dmaven.repo.local=/tmp/quizrace-m2 exec:java
 ```
 
-Para utilização permanente, instale um JDK completo e Maven e use os comandos normais indicados no início.
-
-## Comunicação TCP — fase actual
-
-TCP é usado para comunicação entre cliente e servidor. Fornece um fluxo de bytes fiável e ordenado; neste projecto, cada mensagem é uma linha UTF-8 terminada por uma mudança de linha. A aplicação interpreta essas linhas, pois TCP não delimita mensagens automaticamente.
-
-`QuizServer` abre um ServerSocket na porta **5000**, aceita ligações e fecha os sockets ao terminar com Ctrl+C. `ClienteHandler` atende um cliente, regista o seu nome, devolve uma mensagem de teste e apresenta a primeira pergunta de `perguntas.txt`. Reutiliza Pergunta, Jogador, Resposta, CalculadoraPontuacao e GerenciadorPerguntas. `QuizClient` lê o terminal e mostra as mensagens recebidas. `ProtocoloMensagem` centraliza construção, parsing e validação. `ConfiguracaoRede` concentra hostname padrão (`localhost`), porta e tempos de espera.
-
-Há uma thread simples por ligação para que um cliente à espera de entrada não bloqueie os outros. Cada handler possui o seu Jogador; apenas o conjunto de sockets tem um bloqueio curto para coordenar o encerramento. O cliente mantém a recepção activa enquanto aguarda entrada do terminal, permitindo observar timeouts e desligamentos. Isto ainda **não é a versão paralela académica final**.
-
-### Testar em três terminais
-
-Em cada terminal, abra a pasta que contém o `pom.xml`. Compile primeiro:
-
-```bash
-mvn clean compile
-mvn test
-```
-
-Terminal 1 — servidor:
-
-```bash
-mvn exec:java -Dexec.mainClass="quizrace.server.QuizServer"
-```
-
-Terminal 2 — primeiro cliente:
-
-```bash
-mvn exec:java -Dexec.mainClass="quizrace.client.QuizClient"
-```
-
-Terminal 3 — segundo cliente:
-
-```bash
-mvn exec:java -Dexec.mainClass="quizrace.client.QuizClient"
-```
-
-Introduza `Ana` no primeiro cliente e `Bruno` no segundo. Deixe ambos ligados antes de enviar a mensagem de teste. Cada um deverá receber `MENSAGEM|Bem-vindo, <nome>!`. Escreva, por exemplo, `Olá servidor`. O servidor regista o texto e responde `MENSAGEM|Recebido: Olá servidor`. Em seguida envia a primeira pergunta do ficheiro (actualmente sobre a palavra-chave que cria uma classe Java). Responda `A` para acertar ou `B` para testar uma resposta errada. Prima Enter após cada entrada.
-
-O cliente acrescenta automaticamente NOME, MENSAGEM e RESPOSTA: não escreva os prefixos no terminal. Aguarde as instruções antes de responder. O servidor calcula o resultado, envia FIM e fecha essa ligação, continuando disponível para outros clientes. `/sair` desliga o cliente em qualquer fase. Ctrl+C encerra o servidor e as ligações activas.
-
-Para outro computador na mesma rede, indique o IP ou hostname do servidor:
-
-```bash
-mvn exec:java -Dexec.mainClass="quizrace.client.QuizClient" -Dexec.args="192.168.1.10"
-```
-
-O servidor escuta nas interfaces de rede disponíveis; a porta TCP 5000 deve estar acessível. Se estiver ocupada, liberte-a ou altere a constante PORTA e recompile servidor e clientes. Se utilizar as ferramentas temporárias desta entrega, aplique as variáveis de ambiente descritas acima e acrescente `-Dmaven.repo.local=/tmp/quizrace-m2` aos comandos Maven.
-
-### Protocolo
-
-| Direcção | Mensagem | Significado |
-| --- | --- | --- |
-| Cliente → servidor | `NOME|Ana` | Identificação inicial |
-| Cliente → servidor | `MENSAGEM|Olá servidor` | Texto de teste, após o nome |
-| Cliente → servidor | `RESPOSTA|A` | Resposta à pergunta |
-| Servidor → cliente | `MENSAGEM|Bem-vindo, Ana!` | Informação ou confirmação |
-| Servidor → cliente | `PERGUNTA|Enunciado` | Pergunta |
-| Servidor → cliente | `OPCAO|A|Texto` | Uma das quatro alternativas |
-| Servidor → cliente | `RESULTADO|CORRECTO|85.00` | Resultado e pontos |
-| Servidor → cliente | `ERRO|Descrição` | Resposta inválida; pode tentar novamente |
-| Servidor → cliente | `FIM|Descrição` | Fim normal da sessão |
-
-RESULTADO admite CORRECTO, ERRADO ou TEMPO_ESGOTADO. Os pontos usam ponto decimal, independentemente do idioma do sistema. Campos vazios, quebras de linha e `|` dentro de campos são rejeitados; não existe escape nem JSON. O nome deve chegar primeiro, seguido de uma mensagem de teste e de uma resposta. Um erro na identificação ou na mensagem inicial encerra apenas essa ligação e fica registado no servidor. Durante a pergunta, entradas inválidas recebem ERRO e não reiniciam o prazo.
-
-### Limitações actuais
-
-- Uma pergunta por ligação, sem sala partilhada, ranking em rede ou gestão global de 2–4 jogadores. A versão sequencial continua disponível sem alterações.
-- Prazo de 15 segundos medido no servidor após enviar a pergunta e instruções; inclui a latência de rede. Timeout vale zero pontos. A identificação e a mensagem de teste têm espera de leitura de 60 segundos cada.
-- Nomes não são únicos entre ligações. Sem autenticação, TLS, reconexão, persistência ou limites de clientes/tamanho de linhas; destina-se a demonstração numa rede controlada.
-- A leitura do terminal reutiliza EntradaConsole, cuja thread daemon termina com o processo. Sockets e streams de rede são fechados no fim da sessão; o cliente deixa de enviar quando a ligação fecha.
-- Docker será introduzido posteriormente para facilitar a execução e simulação de múltiplos clientes.
-- ExecutorService será introduzido posteriormente para implementar e avaliar a versão paralela. Não existem ainda pool, benchmark ou testes de speedup.
-
-Os testes de ProtocoloMensagem verificam construção, parsing, mensagens inválidas, conversão entre texto e campos e validação de respostas com as regras existentes. Não requerem portas de rede; os sete testes anteriores são preservados.
+A opção de repositório local também pode ser acrescentada aos restantes comandos. `/tmp` pode ser limpo pelo sistema; para uso permanente, instale JDK 21 e Maven. Docker não depende dessas instalações temporárias.
