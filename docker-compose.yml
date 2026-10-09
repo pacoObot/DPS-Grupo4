@@ -1,0 +1,45 @@
+name: quizrace
+
+x-player: &player
+  image: quizrace-academico:local
+  pull_policy: never
+  command: ["quizrace.client.ClienteSimulado"]
+  depends_on:
+    server:
+      condition: service_started
+  environment: &player-env
+    QUIZ_HOST: server
+    QUIZ_PORT: "5000"
+    QUIZ_ATRASO_MIN_MS: "100"
+    QUIZ_ATRASO_MAX_MS: "500"
+    QUIZ_ACERTO: "0.75"
+
+services:
+  server:
+    build: .
+    image: quizrace-academico:local
+    environment:
+      QUIZ_PORT: "5000"
+    ports:
+      - "${QUIZ_PUBLISH_PORT:-5000}:5000"
+    stop_grace_period: 10s
+  player1:
+    <<: *player
+    environment:
+      <<: *player-env
+      QUIZ_NOME: BOT-1
+  player2:
+    <<: *player
+    environment:
+      <<: *player-env
+      QUIZ_NOME: BOT-2
+  player3:
+    <<: *player
+    environment:
+      <<: *player-env
+      QUIZ_NOME: BOT-3
+  player4:
+    <<: *player
+    environment:
+      <<: *player-env
+      QUIZ_NOME: BOT-4
