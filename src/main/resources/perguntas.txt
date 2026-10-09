@@ -2,3 +2,10 @@
 Qual palavra-chave cria uma classe em Java?|class|def|function|struct|A|Java
 Quanto é 7 multiplicado por 8?|48|54|56|64|C|Matemática
 Qual interface representa uma tarefa executável por uma thread?|List|Runnable|Map|Comparable|B|Concorrência
+Qual é a capital de Moçambique?|Beira|Maputo|Nampula|Tete|B|Geografia
+Qual protocolo fornece um fluxo fiável e ordenado?|UDP|IP|TCP|ICMP|C|Redes
+Qual serviço gere um grupo de threads em Java?|Scanner|ExecutorService|StringBuilder|Random|B|Concorrência
+Qual método inicia a execução de uma Thread?|start|read|close|get|A|Java
+Qual estrutura aguarda um número definido de conclusões?|ArrayList|HashMap|String|CountDownLatch|D|Concorrência
+Quanto é 12 ao quadrado?|24|124|144|132|C|Matemática
+Qual comando compila um projecto Maven?|mvn stop|mvn compile|mvn start|mvn open|B|Maven

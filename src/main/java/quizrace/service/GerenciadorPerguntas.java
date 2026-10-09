@@ -19,7 +19,7 @@ public final class GerenciadorPerguntas {
                 String[] campos = linha.split("\\|", -1);
                 if (campos.length != 7 || campos[5].length() != 1) throw new IOException("Pergunta inválida na linha " + numero);
                 try {
-                    perguntas.add(new Pergunta(campos[0], List.of(campos[1], campos[2], campos[3], campos[4]), campos[5].charAt(0), campos[6]));
+                    perguntas.add(new Pergunta(campos[0], List.of(campos[1], campos[2], campos[3], campos[4]), campos[5].charAt(0), campos[6], perguntas.size() + 1));
                 } catch (IllegalArgumentException e) {
                     throw new IOException("Pergunta inválida na linha " + numero, e);
                 }

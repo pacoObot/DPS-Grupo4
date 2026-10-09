@@ -5,7 +5,7 @@
   <artifactId>quizrace</artifactId>
   <version>1.0-SNAPSHOT</version>
   <properties>
-    <maven.compiler.release>17</maven.compiler.release>
+    <maven.compiler.release>21</maven.compiler.release>
     <exec.mainClass>quizrace.Main</exec.mainClass>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>

@@ -41,7 +41,8 @@ public final class QuizSequencial {
                     Resposta resposta = new Resposta(alternativa, esgotado ? Pergunta.LIMITE_SEGUNDOS : tempo, esgotado);
                     boolean correcta = pergunta.estaCorrecta(resposta);
                     double pontos = calculadora.calcular(correcta, resposta.tempoSegundos());
-                    jogador.registarResposta(correcta, pontos, resposta.tempoSegundos());
+                    if (esgotado) jogador.registrarTimeout(resposta.tempoSegundos());
+                    else jogador.registarResposta(correcta, pontos, resposta.tempoSegundos());
                     saida.printf("%s Pontos: %.2f | Tempo: %.2f s%n", esgotado ? "Tempo esgotado!" : correcta ? "Correcto!" : "Errado!", pontos, resposta.tempoSegundos());
                 }
             }

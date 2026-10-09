@@ -3,10 +3,15 @@ package quizrace.model;
 import java.util.List;
 
 public record Pergunta(String enunciado, List<String> alternativas, char respostaCorrecta,
-                       String categoria) {
+                       String categoria, int identificador) {
     public static final int LIMITE_SEGUNDOS = 15;
 
+    public Pergunta(String enunciado, List<String> alternativas, char respostaCorrecta, String categoria) {
+        this(enunciado, alternativas, respostaCorrecta, categoria, 0);
+    }
+
     public Pergunta {
+        if (identificador < 0) throw new IllegalArgumentException("Identificador inválido.");
         if (enunciado == null || enunciado.isBlank()) throw new IllegalArgumentException("Enunciado obrigatório.");
         if (alternativas == null || alternativas.size() != 4
                 || alternativas.stream().anyMatch(a -> a == null || a.isBlank())) {

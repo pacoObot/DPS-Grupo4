@@ -50,7 +50,7 @@ class QuizRaceTest {
 
     @Test void carregaPerguntasDeExemplo() throws IOException {
         var perguntas = new GerenciadorPerguntas().carregar();
-        assertEquals(3, perguntas.size());
+        assertEquals(10, perguntas.size());
         assertEquals('A', perguntas.get(0).respostaCorrecta());
     }
 

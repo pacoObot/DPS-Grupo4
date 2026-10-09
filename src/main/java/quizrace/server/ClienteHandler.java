@@ -1,85 +1,67 @@
 package quizrace.server;
 
-import quizrace.model.*;
+import quizrace.model.Jogador;
 import quizrace.network.*;
-import quizrace.service.CalculadoraPontuacao;
-import quizrace.util.Cronometro;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 import static quizrace.network.ProtocoloMensagem.Tipo.*;
 
-public final class ClienteHandler implements Runnable {
+public final class ClienteHandler implements Runnable, CanalJogador {
     private final Socket socket;
-    private final Pergunta pergunta;
+    private final SalaQuiz sala;
+    private final BufferedWriter saida;
+    private Jogador jogador;
+    private boolean registado;
 
-    public ClienteHandler(Socket socket, Pergunta pergunta) {
+    public ClienteHandler(Socket socket, SalaQuiz sala) throws IOException {
         this.socket = socket;
-        this.pergunta = pergunta;
+        this.sala = sala;
+        this.saida = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
     }
 
     @Override public void run() {
-        try (socket;
-             var entrada = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-             var saida = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8))) {
+        try {
+            var entrada = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
             socket.setSoTimeout(ConfiguracaoRede.ESPERA_INICIAL_MS);
-            enviar(saida, MENSAGEM, "Envie o seu nome para iniciar.");
-            var identificacao = receber(entrada);
-            if (identificacao.tipo() != NOME) throw new IllegalArgumentException("A primeira mensagem deve ser NOME.");
-            Jogador jogador = new Jogador(identificacao.campo(0));
-            System.out.println("Jogador registado: " + jogador.getNome());
-            enviar(saida, MENSAGEM, "Bem-vindo, " + jogador.getNome() + "!");
-            enviar(saida, MENSAGEM, "Escreva uma mensagem para testar a ligação.");
-            var mensagem = receber(entrada);
-            if (mensagem.tipo() != MENSAGEM) throw new IllegalArgumentException("Esperada uma MENSAGEM de teste.");
-            System.out.println(jogador.getNome() + " enviou: " + mensagem.campo(0));
-            enviar(saida, MENSAGEM, "Recebido: " + mensagem.campo(0));
-            enviar(saida, PERGUNTA, pergunta.enunciado());
-            for (int i = 0; i < 4; i++) enviar(saida, OPCAO, String.valueOf((char) ('A' + i)), pergunta.alternativas().get(i));
-            enviar(saida, MENSAGEM, "Responda A, B, C ou D em 15 segundos.");
-            Cronometro cronometro = new Cronometro();
-            Resposta resposta;
-            while (true) {
-                double restante = Pergunta.LIMITE_SEGUNDOS - cronometro.segundosDecorridos();
-                if (restante <= 0) {
-                    resposta = new Resposta("", Pergunta.LIMITE_SEGUNDOS, true);
-                    break;
-                }
-                socket.setSoTimeout(Math.max(1, (int) Math.ceil(restante * 1000)));
+            enviarMensagem(ProtocoloMensagem.construir(MENSAGEM, "Envie o seu nome para iniciar."));
+            String linha = ProtocoloMensagem.lerLinha(entrada);
+            if (linha == null) return;
+            var nome = ProtocoloMensagem.interpretar(linha);
+            if (nome.tipo() != NOME) throw new IllegalArgumentException("A primeira mensagem deve ser NOME.");
+            jogador = new Jogador(nome.campo(0));
+            sala.entrar(jogador, this);
+            registado = true;
+            socket.setSoTimeout(0);
+            while ((linha = ProtocoloMensagem.lerLinha(entrada)) != null) {
                 try {
-                    resposta = ProtocoloMensagem.paraResposta(receber(entrada), cronometro.segundosDecorridos());
-                    break;
-                } catch (SocketTimeoutException e) {
-                    resposta = new Resposta("", Pergunta.LIMITE_SEGUNDOS, true);
-                    break;
-                } catch (IllegalArgumentException e) {
-                    enviar(saida, ERRO, e.getMessage());
-                }
+                    var mensagem = ProtocoloMensagem.interpretar(linha);
+                    if (mensagem.tipo() == MENSAGEM) enviarMensagem(ProtocoloMensagem.construir(MENSAGEM, "Recebido: " + mensagem.campo(0)));
+                    else if (mensagem.tipo() != RESPOSTA || !sala.responder(jogador, mensagem))
+                        enviarMensagem(ProtocoloMensagem.construir(ERRO, "Resposta duplicada, fora do prazo ou de outra pergunta; use RESPOSTA com identificador."));
+                } catch (IllegalArgumentException e) { enviarErro(e.getMessage()); }
             }
-            boolean correcta = pergunta.estaCorrecta(resposta);
-            double tempo = Math.min(resposta.tempoSegundos(), Pergunta.LIMITE_SEGUNDOS);
-            double pontos = new CalculadoraPontuacao().calcular(correcta, tempo);
-            jogador.registarResposta(correcta, pontos, tempo);
-            enviar(saida, RESULTADO, resposta.tempoEsgotado() ? "TEMPO_ESGOTADO" : correcta ? "CORRECTO" : "ERRADO",
-                    String.format(Locale.ROOT, "%.2f", jogador.getPontuacao()));
-            enviar(saida, FIM, "Teste concluído. Obrigado, " + jogador.getNome() + "!");
-        } catch (IOException | IllegalArgumentException e) {
-            System.out.println("Ligação " + socket.getRemoteSocketAddress() + " terminada: " + e.getMessage());
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            enviarErro(e.getMessage());
+        } catch (IOException e) {
+            if (!socket.isClosed()) System.out.println("[CONEXAO] " + e.getMessage());
         } finally {
-            System.out.println("Cliente desligado: " + socket.getRemoteSocketAddress());
+            if (registado) sala.sair(jogador);
+            fechar();
+            System.out.println("[CONEXAO] Cliente desligado: " + socket.getRemoteSocketAddress());
         }
     }
 
-    private static ProtocoloMensagem.Mensagem receber(BufferedReader entrada) throws IOException {
-        String linha = entrada.readLine();
-        if (linha == null) throw new EOFException("O cliente desligou-se.");
-        return ProtocoloMensagem.interpretar(linha);
+    private void enviarErro(String erro) { enviarMensagem(ProtocoloMensagem.construir(ERRO, erro)); }
+
+    @Override public synchronized void enviarMensagem(String mensagem) {
+        if (socket.isClosed()) return;
+        try { saida.write(mensagem); saida.newLine(); saida.flush(); }
+        catch (IOException e) { fechar(); }
     }
 
-    private static void enviar(BufferedWriter saida, ProtocoloMensagem.Tipo tipo, String... campos) throws IOException {
-        saida.write(ProtocoloMensagem.construir(tipo, campos));
-        saida.newLine();
-        saida.flush();
+    @Override public void fechar() {
+        try { socket.close(); }
+        catch (IOException e) { System.err.println("[CONEXAO] Erro ao fechar socket: " + e.getMessage()); }
     }
 }
