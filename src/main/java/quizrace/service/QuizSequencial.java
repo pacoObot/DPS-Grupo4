@@ -15,6 +15,13 @@ public final class QuizSequencial {
         this.saida = saida;
     }
 
+    public static java.util.List<quizrace.benchmark.JogadorSimulado.Resultado> executarSimulados(
+            java.util.List<quizrace.benchmark.JogadorSimulado> jogadores, List<Pergunta> perguntas, int iteracoes) {
+        var resultados = new java.util.ArrayList<quizrace.benchmark.JogadorSimulado.Resultado>();
+        for (var jogador : jogadores) resultados.add(new quizrace.parallel.JogadorTask(jogador, perguntas, iteracoes).call());
+        return resultados;
+    }
+
     public double executar(List<Jogador> jogadores, List<Pergunta> perguntas) {
         if (jogadores.size() < 2 || jogadores.size() > 4) throw new IllegalArgumentException("Registe entre 2 e 4 jogadores.");
         if (perguntas.isEmpty()) throw new IllegalArgumentException("São necessárias perguntas.");

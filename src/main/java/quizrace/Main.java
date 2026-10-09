@@ -7,9 +7,24 @@ import java.io.IOException;
 import java.util.*;
 
 public final class Main {
-    public static void main(String[] args) {
-        System.out.println("=== QuizRace — versão sequencial ===");
+    public static void main(String[] args) throws Exception {
         EntradaConsole entrada = new EntradaConsole(System.in);
+        if (args.length > 0 && args[0].equals("--local")) { jogarLocal(entrada); return; }
+        try {
+            System.out.println("=== QUIZRACE ===\n1 - Jogar versão local sequencial\n2 - Iniciar servidor\n3 - Iniciar cliente\n4 - Executar benchmark\n0 - Sair");
+            switch (entrada.ler().trim()) {
+                case "1" -> jogarLocal(entrada);
+                case "2" -> quizrace.server.QuizServer.main(new String[0]);
+                case "3" -> quizrace.client.QuizClient.executar(new String[0], entrada);
+                case "4" -> quizrace.benchmark.BenchmarkRunner.main(new String[0]);
+                case "0" -> { }
+                default -> System.out.println("Opção inválida. Execute novamente para escolher.");
+            }
+        } catch (IllegalStateException e) { System.out.println(e.getMessage()); }
+    }
+
+    private static void jogarLocal(EntradaConsole entrada) {
+        System.out.println("=== QuizRace — versão sequencial ===");
         try {
             List<Pergunta> perguntas = new GerenciadorPerguntas().carregar();
             int quantidade = 0;
