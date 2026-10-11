@@ -1,3 +1,23 @@
+# ---- Build / artefactos ----
 target/
+dependency-reduced-pom.xml
+*.class
+
+# ---- Logs ----
+logs/
+*.log
+
+# ---- IDE ----
 .idea/
 *.iml
+.vscode/
+*.swp
+
+# ---- Segredos e ambiente ----
+.env
+.env.*
+!.env.example
+
+# ---- SO ----
+.DS_Store
+Thumbs.db

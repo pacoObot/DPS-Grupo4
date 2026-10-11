@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#141726">
+  <title>Quiz Multiplayer · Jogar</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">QUIZ <span>Paralelo</span></div>
+    <div id="conn" class="conn offline">offline</div>
+  </header>
+
+  <!-- ================= LOGIN ================= -->
+  <section id="screen-join" class="screen active">
+    <div class="card">
+      <h1>Entrar numa partida</h1>
+      <p class="muted">Peça o código ao administrador e escolha o nome da sua equipa.</p>
+
+      <label>Código da partida</label>
+      <input id="code" inputmode="text" autocapitalize="characters" placeholder="ex.: AB12" maxlength="12">
+
+      <label>Nome da equipa</label>
+      <input id="team" inputmode="text" placeholder="ex.: Alpha" maxlength="40">
+
+      <details class="adv">
+        <summary>Servidor (avançado)</summary>
+        <div class="grid2">
+          <div>
+            <label>Endereço</label>
+            <input id="host" placeholder="127.0.0.1" value="127.0.0.1">
+          </div>
+          <div>
+            <label>Porta</label>
+            <input id="port" inputmode="numeric" value="5050">
+          </div>
+        </div>
+      </details>
+
+      <button id="btn-join" class="btn primary block">ENTRAR</button>
+      <div id="join-status" class="banner info">Introduza o código e o nome da equipa.</div>
+    </div>
+  </section>
+
+  <!-- ================= LOBBY ================= -->
+  <section id="screen-lobby" class="screen">
+    <div class="card center">
+      <h1>Sala de espera</h1>
+      <div id="lobby-code" class="code">—</div>
+      <div id="lobby-team" class="muted">—</div>
+      <div id="lobby-waiting" class="waiting">A aguardar equipas…</div>
+      <div id="lobby-status" class="banner info">O administrador ainda não iniciou a partida.</div>
+      <p class="muted small">A pergunta aparece automaticamente quando a ronda começar.</p>
+    </div>
+  </section>
+
+  <!-- ================= QUIZ ================= -->
+  <section id="screen-quiz" class="screen">
+    <div id="paused-banner" class="banner warn hidden">⏸ Jogo em pausa — aguarde o administrador.</div>
+
+    <div class="hud">
+      <span id="q-round" class="badge info">Ronda —</span>
+      <span id="q-timer" class="timer">—</span>
+      <span id="q-points" class="points">0</span>
+    </div>
+    <div class="progress"><div id="q-bar"></div></div>
+
+    <div id="q-text" class="question">A aguardar a próxima pergunta…</div>
+    <div id="q-feedback" class="banner info hidden"></div>
+
+    <div class="options">
+      <button class="opt" data-opt="A"><span>A</span><em></em></button>
+      <button class="opt" data-opt="B"><span>B</span><em></em></button>
+      <button class="opt" data-opt="C"><span>C</span><em></em></button>
+      <button class="opt" data-opt="D"><span>D</span><em></em></button>
+    </div>
+
+    <h2 class="board-title">Classificação ao vivo</h2>
+    <div id="q-board" class="board"></div>
+  </section>
+
+  <!-- ================= RESULT ================= -->
+  <section id="screen-result" class="screen">
+    <div class="card center">
+      <h1 id="result-title">Fim de jogo</h1>
+      <div id="podium" class="podium"></div>
+      <div id="rank" class="rank"></div>
+      <button id="btn-again" class="btn block">JOGAR OUTRA VEZ</button>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

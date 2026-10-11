@@ -1,4 +1,0 @@
-# enunciado|A|B|C|D|resposta correcta|categoria
-Qual palavra-chave cria uma classe em Java?|class|def|function|struct|A|Java
-Quanto é 7 multiplicado por 8?|48|54|56|64|C|Matemática
-Qual interface representa uma tarefa executável por uma thread?|List|Runnable|Map|Comparable|B|Concorrência

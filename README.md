@@ -1,119 +1,171 @@
-# QuizRace
+# Quiz Multiplayer Paralelo
 
-Projecto académico em Java para um quiz de 2 a 4 jogadores. Esta primeira etapa implementa a versão sequencial no terminal. Não utiliza frameworks de aplicação; JUnit é usado apenas nos testes.
+Sistema **cliente-servidor em rede** de quiz para várias equipas em simultâneo.
+Escrito em **Java 21**, comunicação por **TCP Socket**, persistência em **PostgreSQL**,
+interfaces gráficas em **JavaFX** (programáticas + CSS) e arquitetura limpa em camadas.
 
-## Executar
+O foco do projeto é **programação concorrente e em rede**: cada equipa é servida numa
+thread própria, o servidor é a autoridade do tempo, e a pontuação nunca se perde mesmo
+com todas as equipas a responder no mesmo instante (transações + `SELECT ... FOR UPDATE`).
 
-Requisitos: JDK 17 ou superior e Apache Maven 3.9 ou superior disponíveis no PATH.
+```
+        ┌────────────┐   TCP   ┌──────────────────────────────┐   JDBC   ┌────────────┐
+        │  JavaFX    │◀───────▶│   SERVIDOR (thread pool)      │◀────────▶│ PostgreSQL │
+        │ Admin /    │  texto  │  accept → ClientHandler       │          │ quiz_parallel
+        │ Jogador    │  `|`    │  GameScheduler (rondas)       │          └────────────┘
+        └────────────┘         └──────────────────────────────┘
+        ┌────────────┐              ▲
+        │ Enxame de  │──────────────┘   (bots de carga para a demonstração)
+        │ bot.jar    │
+        └────────────┘
+```
+
+---
+
+## Funcionalidades
+
+- **Admin (JavaFX):** consola com **navegação lateral** e **dashboard de indicadores
+  em tempo real** (threads, ligações, perguntas, partida, respostas, top 3),
+  CRUD de perguntas com filtros e validação, criar/configurar partida,
+  abrir inscrições, iniciar/pausar/retomar/encerrar, classificação e **monitor de threads**.
+- **Jogador (JavaFX):** entrar com código da partida, sala de espera ao vivo,
+  ecrã de pergunta com **cronómetro e barra de progresso**, feedback imediato,
+  **banner de pausa**, classificação ao vivo e resultado final com **pódio**.
+- **Servidor:** pool de threads, `GameScheduler` que conduz as rondas, transações
+  atómicas por resposta, validação estrita de todo o protocolo.
+- **Bots:** enxame de jogadores automáticos (`bot.jar`) para testar carga e concorrência.
+- **Persistência:** migrações versionadas com **Flyway** (V1–V8).
+
+---
+
+## Requisitos
+
+| Ferramenta | Versão |
+|---|---|
+| Java (JDK) | 21 ou superior |
+| Maven | 3.9+ |
+| PostgreSQL | 14+ (local, **sem Docker**) |
+
+> O `pom.xml` usa `maven.compiler.release=21`, pelo que funciona em JDKs recentes
+> (testado em Java 26).
+
+---
+
+## Arranque rápido
 
 ```bash
-cd QuizRace
-mvn clean compile
-mvn exec:java
+# 1) Preparar o PostgreSQL local (cria role `quiz` e as bases)
+./scripts/setup-db.sh
+
+# 2) Compilar (jars do servidor e dos bots)
+./scripts/build.sh
+
+# 3) Arrancar o servidor  (aplica migrações e cria o admin/admin)
+./scripts/run-server.sh              # porta TCP 5050
+
+# 4) Noutros terminais:
+./scripts/run-admin.sh               # interface do administrador
+./scripts/run-player.sh              # interface do jogador (abrir várias vezes)
 ```
 
-Para executar os testes:
+No admin: **admin / admin** → crie perguntas → crie a partida → copie o código →
+abra inscrições → inicie. No jogador, use esse código e um nome de equipa.
+
+### Cliente web (browser / telemóvel)
+
+Além do cliente JavaFX, existe um **gateway web** (módulo separado
+`quiz-paralelo-web`, Spring Boot) que serve uma página *mobile-first* e faz
+ponte por WebSocket para o servidor TCP do quiz. É assim que os jogadores
+entram **pela web** — inclusive pelo telemóvel, na mesma Wi‑Fi.
 
 ```bash
-mvn test
+# com o servidor do quiz a correr (porta 5050):
+./scripts/run-web.sh                 # arranca o gateway na porta 8090
 ```
 
-Também pode importar `pom.xml` numa IDE e executar `quizrace.Main`, ou, depois de compilar:
+- No PC: `http://localhost:8090`
+- No telemóvel (mesma rede Wi‑Fi): `http://<IP-desta-máquina>:8090`
+  (o servidor do quiz escuta em `0.0.0.0:5050` e o gateway em `0.0.0.0:8090`).
+
+Cada separador/aba do browser é um jogador: abre uma ligação TCP própria ao
+servidor do quiz e reencaminha `JOIN_GAME`, `QUESTION`, `ANSWER`… em tempo real.
+
+### Enxame de bots (demonstração de concorrência)
 
 ```bash
-java -cp target/classes quizrace.Main
+./scripts/run-bots.sh <CODIGO> 50        # 50 bots entram e jogam sozinhos
 ```
 
-Registe entre 2 e 4 jogadores com nomes diferentes. Cada jogador responde a todas as perguntas antes de passar a vez ao seguinte. Escreva A, B, C ou D e prima Enter. A contagem começa depois da apresentação das alternativas. Uma entrada inválida permite nova tentativa dentro do mesmo prazo.
-
-## Regras
-
-- Limite de 15 segundos por pergunta; tempo esgotado conta como resposta errada e 15 segundos no tempo do jogador.
-- Resposta errada: 0 pontos.
-- Resposta correcta: `max(10, 100 - tempoEmSegundos * 5)`; as fracções de segundo são preservadas no cálculo. A apresentação usa duas casas decimais.
-- Com o prazo actual, uma resposta correcta vale pelo menos cerca de 25 pontos. O mínimo de 10 está implementado para permitir futuros limites diferentes.
-- Ranking por pontuação decrescente; desempate pelo menor tempo total e, depois, pelo nome. As posições são ordinais.
-- O fim da entrada interrompe o jogo com uma mensagem.
-
-Uma thread auxiliar daemon lê o terminal e entrega linhas a uma fila. Isto permite aplicar o limite de tempo mesmo quando ninguém prime Enter. A lógica do quiz e os jogadores continuam sequenciais. O terminal não permite identificar a pergunta a que uma linha tardia pertence: após um timeout, a próxima linha será considerada resposta à pergunta que estiver activa. Responda apenas quando solicitado e não antecipe respostas.
-
-## Estrutura e responsabilidades
-
-```text
-QuizRace/
-├── pom.xml
-├── README.md
-├── .gitignore
-└── src/
-    ├── main/
-    │   ├── java/quizrace/
-    │   │   ├── Main.java
-    │   │   ├── model/
-    │   │   │   ├── Jogador.java
-    │   │   │   ├── Pergunta.java
-    │   │   │   └── Resposta.java
-    │   │   ├── service/
-    │   │   │   ├── QuizSequencial.java
-    │   │   │   ├── QuizParalelo.java
-    │   │   │   ├── CalculadoraPontuacao.java
-    │   │   │   ├── GerenciadorPerguntas.java
-    │   │   │   └── RankingService.java
-    │   │   ├── parallel/
-    │   │   │   └── JogadorTask.java
-    │   │   └── util/
-    │   │       ├── Cronometro.java
-    │   │       ├── MedidorDesempenho.java
-    │   │       └── EntradaConsole.java
-    │   └── resources/perguntas.txt
-    └── test/java/quizrace/QuizRaceTest.java
-```
-
-| Classe | Responsabilidade |
-| --- | --- |
-| Main | Registar jogadores, iniciar o jogo e apresentar o ranking. |
-| Jogador | Guardar nome, pontuação, contadores e tempos total e da última resposta. |
-| Pergunta | Validar quatro alternativas e verificar a resposta e o prazo; dados imutáveis. |
-| Resposta | Representar alternativa, tempo e indicação de timeout; dados imutáveis. |
-| CalculadoraPontuacao | Aplicar a fórmula de pontos. |
-| GerenciadorPerguntas | Carregar e validar as perguntas do recurso UTF-8. |
-| QuizSequencial | Processar cada jogador e cada pergunta, medindo e registando resultados. |
-| RankingService | Produzir uma lista ordenada sem alterar a lista original. |
-| Cronometro | Medir intervalos com o relógio monotónico System.nanoTime. |
-| MedidorDesempenho | Medir a duração de uma tarefa. |
-| EntradaConsole | Ler o terminal através de uma fila e permitir espera com prazo. |
-| QuizParalelo | Classe base vazia, reservada para a segunda etapa. |
-| JogadorTask | Classe base vazia, reservada para a futura tarefa de um jogador. |
-
-`Pergunta` e `Resposta` usam records, disponíveis em Java 17. Para adicionar perguntas, edite `src/main/resources/perguntas.txt` e volte a compilar. Formato de cada linha:
-
-```text
-enunciado|alternativa A|alternativa B|alternativa C|alternativa D|letra correcta|categoria
-```
-
-A categoria pode ficar vazia, mantendo o último separador. Não utilize `|` dentro dos textos. Linhas vazias e linhas começadas por `#` são ignoradas.
-
-## Segunda etapa e comparação
-
-`QuizParalelo` e `JogadorTask` ainda não executam tarefas. A segunda etapa deverá usar ExecutorService, uma tarefa por jogador e aguardar a conclusão antes de ler os resultados. Cada tarefa poderá ser dona exclusiva do seu Jogador, evitando sincronização desnecessária. Actualmente Jogador não permite utilização concorrente segura por várias tarefas.
-
-Um único terminal partilhado não oferece entrada humana simultânea independente. Para demonstrar concorrência e comparar tempos de forma justa, a segunda etapa deve usar respostas simuladas reproduzíveis, com as mesmas perguntas, respostas e atrasos nas duas versões, ou canais independentes por jogador.
-
-O tempo sequencial apresentado inclui a espera pelas respostas e a saída das perguntas, mas exclui registo, carregamento e impressão do ranking. Ainda não é um benchmark de processamento nem existe medição da versão paralela.
-
-## Validação
-
-Os testes verificam a fórmula, os dados de Jogador e Pergunta, o prazo de leitura, o carregamento do recurso, a ordenação e uma partida sequencial com entrada em memória. Não dependem de introdução manual.
-
-### Ambiente usado nesta entrega
-
-O ambiente original tinha Java para execução, mas não tinha Maven nem JDK completo. A validação utilizou Maven 3.9.9 e JDK 21 temporários em `/tmp`, sem alterar o sistema. Enquanto essas pastas existirem, pode executar a partir de `QuizRace/`:
+### Demonstração automática ponta-a-ponta (sem JavaFX)
 
 ```bash
-export JAVA_HOME=/tmp/quizrace-jdk
-export PATH="/tmp/apache-maven-3.9.9/bin:$JAVA_HOME/bin:$PATH"
-mvn -Dmaven.repo.local=/tmp/quizrace-m2 clean compile
-mvn -Dmaven.repo.local=/tmp/quizrace-m2 test
-mvn -Dmaven.repo.local=/tmp/quizrace-m2 exec:java
+./scripts/demo.sh 20 3 10                # 20 bots, 3 perguntas, 10s cada
 ```
 
-Para utilização permanente, instale um JDK completo e Maven e use os comandos normais indicados no início.
+Arranca o servidor, cria a partida, lança os bots, inicia o jogo e imprime a
+classificação final no terminal.
+
+---
+
+## Configuração
+
+Lida por esta ordem: **variável de ambiente → `db.properties`** (produção nunca
+deve ter segredos no ficheiro).
+
+| Variável | Default | Descrição |
+|---|---|---|
+| `DB_HOST` | `127.0.0.1` | host do PostgreSQL |
+| `DB_PORT` | `5432` | porta do PostgreSQL |
+| `DB_NAME` | `quiz_parallel` | base de dados |
+| `DB_USER` / `DB_PASSWORD` | `quiz` / `quiz` | credenciais |
+| `QUIZ_PORT` | `5050` | porta TCP do servidor |
+| `QUIZ_THREADS` | `50` | tamanho do pool de threads |
+| `DB_POOL_SIZE` | `10` | conexões JDBC |
+
+Exemplo: `QUIZ_PORT=6000 ./scripts/run-server.sh`
+
+---
+
+## Testes
+
+```bash
+mvn -o test        # unitários (*Test) + integração (*IT) — base local necessária para os *IT
+./scripts/build.sh --tests
+```
+
+- **Unitários (`*Test`)** — domínio, protocolo, config, use cases com mocks. Não usam BD.
+- **Integração (`*IT`)** — PostgreSQL **real**: repositórios, fluxo transacional de
+  resposta e **prova de concorrência** (sem *lost updates*).
+
+> Se o PostgreSQL não estiver acessível, os testes `*IT` são **saltados**
+> automaticamente (assumption) e os unitários continuam a passar.
+
+---
+
+## Estrutura (Clean Architecture)
+
+```
+quiz-paralelo/
+├── src/main/java/quiz/
+│   ├── domain/            # entidades e regras puras (sem tecnologia)
+│   ├── application/       # portas (interfaces) + casos de uso + serviços
+│   ├── infrastructure/    # JDBC, Flyway, rede, concorrência, bots, segurança
+│   ├── interfaces/        # JavaFX (admin, jogador) + cliente TCP + tema
+│   └── shared/            # protocolo e DTOs
+├── src/main/resources/db/migration/   # Flyway V1..V8
+├── scripts/               # setup-db, build, run-*, demo, admin_cli.py
+├── docs/                  # arquitetura, protocolo, concorrência, manual
+└── pom.xml
+```
+
+A regra de dependência aponta **sempre para dentro**: `interfaces` e `infrastructure`
+dependem de `application`, que depende de `domain`. O `domain` não conhece ninguém.
+
+---
+
+## Documentação
+
+- [`docs/arquitetura.md`](docs/arquitetura.md) — camadas, padrões, decisões.
+- [`docs/protocolo.md`](docs/protocolo.md) — todas as mensagens TCP.
+- [`docs/concorrencia.md`](docs/concorrencia.md) — threads, locks, transações.
+- [`docs/manual.md`](docs/manual.md) — manual de utilização (admin e jogador).
