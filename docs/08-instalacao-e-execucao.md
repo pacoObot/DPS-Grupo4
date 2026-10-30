@@ -106,3 +106,21 @@ java -jar target/quizrace-api.jar
 ```
 
 O ficheiro `.env` é lido pelo Compose, não automaticamente pelo Java. Para o jogo de terminal, continuam válidos `mvn exec:java` e os comandos TCP do README.
+
+## Interface web (Fase 3)
+
+Com o mesmo `.env`, iniciar os três serviços:
+
+```bash
+docker compose -f compose.api.yml -f compose.web.yml up --build -d
+```
+
+Abra http://localhost:3000. `QUIZ_WEB_PORT` altera esta porta. Entre com a conta administrativa usada no bootstrap; em **Utilizadores**, crie as contas dos colegas. Docentes e estudantes consultam a sua própria conta. O cadastro de perguntas e as avaliações ainda pertencem às próximas fases.
+
+Para encerrar mantendo os dados:
+
+```bash
+docker compose -f compose.api.yml -f compose.web.yml down
+```
+
+As portas estão publicadas apenas em localhost. Para esta entrega, teste no computador que executa os serviços. A ligação dos colegas ao jogo TCP continua descrita no README. Consulte [13-interface-web.md](13-interface-web.md) para desenvolvimento e validação da interface.

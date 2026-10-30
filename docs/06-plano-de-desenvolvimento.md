@@ -1,4 +1,4 @@
-# Plano e entrega — 21 de Outubro de 2026
+# Plano e entrega — actualizado em 30 de Outubro de 2026
 
 A Fase 0 identificou o jogo TCP existente. A Fase 1 definiu a arquitectura, aprovada pelo utilizador antes da implementação. A Fase 2 entrega a fundação de utilizadores e persistência.
 
@@ -14,13 +14,13 @@ Responsável de implementação: Codex; validação funcional e apresentação: 
 
 Entrega técnica da Fase 2 validada: 36 testes aprovados no host e no build Docker, mais ensaio HTTP/PostgreSQL com recuperação após reinício. Está pronta para servir de base à Fase 3; a configuração da instalação normal requer preencher o ficheiro local `.env`.
 
-## Próxima fase concreta
+## Fase 3 entregue
 
-Fase 3: aplicação React/TypeScript com login, identidade actual, navegação por perfil e gestão de utilizadores para administrador. Consumir o contrato real de [05-api-e-protocolo.md](05-api-e-protocolo.md). Prever tratamento de 401/403/409 e expiração de tokens, sem decidir permissões apenas no frontend.
+Fase 3 implementada: aplicação React/TypeScript com login, identidade actual, navegação por perfil e gestão de utilizadores para administrador. Consome o contrato real de [05-api-e-protocolo.md](05-api-e-protocolo.md). Inclui tratamento de 401/403/409 e expiração de tokens, sem decidir permissões apenas no frontend.
 
 | Fase | Entrega | Dependência |
 | --- | --- | --- |
-| 3 | frontend e áreas por perfil | API de utilizadores |
+| 3 (entregue) | frontend e áreas por perfil | API de utilizadores |
 | 4 | preparação, perguntas, quizzes e histórico | identidade persistida |
 | 5 | avaliações, salas, código e ciclo de vida docente | autorização e modelo académico |
 | 6 | respostas, temporizador e painel em tempo real | salas e contratos de eventos |
@@ -28,4 +28,4 @@ Fase 3: aplicação React/TypeScript com login, identidade actual, navegação p
 | 8 | integração completa e testes de carga | componentes anteriores |
 | 9 | revisão de segurança, entrega e demonstração | validações de todas as fases |
 
-Nesta fase não se entregam avaliações, associação entre conta e jogador TCP, histórico de partidas, frontend ou eventos de sala.
+A próxima etapa é a Fase 4: preparação, perguntas, quizzes e histórico. Avaliações, associação entre conta e jogador TCP e eventos de sala continuam pendentes. A Fase 3 foi validada com build TypeScript/Vite e ensaio no navegador; consulte [a interface](13-interface-web.md).

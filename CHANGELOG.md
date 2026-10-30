@@ -1,5 +1,13 @@
 # Histórico de alterações
 
+## 2026-10-30 — Interface académica (Fase 3)
+
+- React/TypeScript com login, área pessoal e navegação por perfil.
+- Lista paginada, criação e alteração de perfil/estado de utilizadores.
+- Sessão apenas em memória, expiração e mensagens de erro da API.
+- Layout responsivo, proxy Vite e imagem Nginx com Compose complementar.
+- Build verificado e ensaio funcional no navegador com API real e H2 temporário.
+
 ## 2026-10-21 — Fundação de identidade e persistência
 
 - API Spring Boot 3.5.16 e JAR independente, mantendo o executável TCP.

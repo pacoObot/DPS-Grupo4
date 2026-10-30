@@ -1,0 +1,10 @@
+# Utilizar em conjunto com compose.api.yml.
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "127.0.0.1:${QUIZ_WEB_PORT:-3000}:80"
+    depends_on:
+      - api

@@ -1,8 +1,28 @@
 # QuizRace — DPS Grupo 4
 
-Projecto académico em Java 21: quiz local sequencial, jogo TCP para 2–4 jogadores, execução concorrente e benchmark. Inclui agora uma API Spring Boot com utilizadores, perfis, autenticação JWT e persistência PostgreSQL. A interface web pertence à próxima fase.
+Projecto académico em Java 21: quiz local sequencial, jogo TCP para 2–4 jogadores, execução concorrente e benchmark. Inclui agora uma API Spring Boot com utilizadores, perfis, autenticação JWT e persistência PostgreSQL. Inclui uma interface React/TypeScript com login, área pessoal e gestão administrativa de contas.
 
 > **Backend académico:** siga [instalação e execução](docs/08-instalacao-e-execucao.md), [contrato API](docs/05-api-e-protocolo.md) e [testes](docs/07-testes.md). O [plano](docs/06-plano-de-desenvolvimento.md) identifica o que está entregue e as fases seguintes. Os comandos TCP abaixo continuam válidos.
+
+## Interface web
+
+Com o `.env` configurado conforme o [guia de instalação](docs/08-instalacao-e-execucao.md):
+
+```bash
+docker compose -f compose.api.yml -f compose.web.yml up --build -d
+```
+
+Abra **http://localhost:3000** e entre com a conta administrativa configurada no primeiro arranque. O administrador cria as contas dos colegas em **Utilizadores**. A interface permite consultar a conta, criar utilizadores e alterar perfil/estado; perguntas e avaliações web serão implementadas nas próximas fases. O jogo TCP continua disponível nos comandos abaixo.
+
+Para desenvolver a interface, use Node.js 22.12+ (recomendado 24), inicie a API e execute:
+
+```bash
+cd web
+npm ci
+npm run dev
+```
+
+Abra o endereço mostrado pelo Vite (normalmente http://localhost:5173). O proxy encaminha `/api` para http://127.0.0.1:8080. Se a API usar outra porta: `QUIZ_API_PROXY=http://127.0.0.1:18087 npm run dev`. Consulte o [guia da interface](docs/13-interface-web.md).
 
 ## Arquitectura
 

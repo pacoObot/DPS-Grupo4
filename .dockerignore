@@ -8,3 +8,6 @@ docs
 .tools
 .env
 data
+
+web/node_modules
+web/dist

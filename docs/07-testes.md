@@ -51,4 +51,22 @@ O ensaio criou administrador e estudante, confirmou duas contas por SQL, reinici
 
 ## Limites
 
-Esta validação não é um teste de carga da API nem uma revisão completa de segurança para produção. Testes de frontend e avaliações ainda não se aplicam. As limitações estão em [12-limitacoes-e-trabalho-futuro.md](12-limitacoes-e-trabalho-futuro.md).
+Esta validação não é um teste de carga da API nem uma revisão completa de segurança para produção. Avaliações ainda não se aplicam. A validação da interface encontra-se abaixo. As limitações estão em [12-limitacoes-e-trabalho-futuro.md](12-limitacoes-e-trabalho-futuro.md).
+
+## Continuação — 30 de Outubro de 2026
+
+Antes da Fase 3, `mvn clean verify` voltou a passar: **36 testes**, sem falhas, erros ou testes ignorados, usando JDK 21.0.12.1 e Maven 3.9.9 locais. A execução precisou de permissão para sockets e instrumentação Mockito; a tentativa limitada pelo sandbox não constitui falha da aplicação.
+
+Frontend: `npm run build` concluiu a verificação TypeScript e o build Vite. Ensaio Playwright no navegador com Vite e API real em porta 18087, usando H2 efémero separado das contas persistidas:
+
+- Login administrativo, credenciais erradas com mensagem adequada e consulta da identidade.
+- Criação de estudante e apresentação na tabela; email duplicado rejeitado.
+- Alteração para docente e novo login com navegação sem gestão administrativa.
+- Tentativa de desactivar o último administrador rejeitada com mensagem da API.
+- Consulta da conta e logout; recarregar a página exige novo login.
+- `localStorage` e `sessionStorage` vazios após autenticação.
+- Vista de 390 px sem transbordamento horizontal.
+
+Este ensaio de navegador não é uma suite automatizada versionada nem substitui o ensaio PostgreSQL descrito acima. Não foi feita medição de carga nem aguardada a expiração real de 15 minutos nesta sessão.
+
+A imagem `quizrace-web:validacao` também foi construída com sucesso usando `Dockerfile.web`. A configuração Nginx passou `nginx -t` num container temporário. A composição API + web passou `docker compose ... config --quiet`; a stack completa PostgreSQL/API/Nginx não foi iniciada neste ensaio da interface.
