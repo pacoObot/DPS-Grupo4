@@ -1,0 +1,33 @@
+name: quizrace-api
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: quizrace
+      POSTGRES_USER: quizrace
+      POSTGRES_PASSWORD: ${QUIZ_DB_PASSWORD:?Defina QUIZ_DB_PASSWORD}
+    volumes:
+      - quizrace-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quizrace -d quizrace"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      QUIZ_DB_URL: jdbc:postgresql://db:5432/quizrace
+      QUIZ_DB_USER: quizrace
+      QUIZ_DB_PASSWORD: ${QUIZ_DB_PASSWORD:?Defina QUIZ_DB_PASSWORD}
+      QUIZ_JWT_SECRET: ${QUIZ_JWT_SECRET:?Defina QUIZ_JWT_SECRET}
+      QUIZ_ADMIN_EMAIL: ${QUIZ_ADMIN_EMAIL:-}
+      QUIZ_ADMIN_PASSWORD: ${QUIZ_ADMIN_PASSWORD:-}
+    ports:
+      - "127.0.0.1:${QUIZ_API_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  quizrace-db:

@@ -1,6 +1,8 @@
 # QuizRace — DPS Grupo 4
 
-Projecto académico em Java 21: quiz local sequencial, jogo TCP para 2–4 jogadores, execução concorrente com ExecutorService e comparação de desempenho com carga simulada. Interface de terminal, Maven e JUnit; sem frameworks de aplicação, base de dados ou interface gráfica.
+Projecto académico em Java 21: quiz local sequencial, jogo TCP para 2–4 jogadores, execução concorrente e benchmark. Inclui agora uma API Spring Boot com utilizadores, perfis, autenticação JWT e persistência PostgreSQL. A interface web pertence à próxima fase.
+
+> **Backend académico:** siga [instalação e execução](docs/08-instalacao-e-execucao.md), [contrato API](docs/05-api-e-protocolo.md) e [testes](docs/07-testes.md). O [plano](docs/06-plano-de-desenvolvimento.md) identifica o que está entregue e as fases seguintes. Os comandos TCP abaixo continuam válidos.
 
 ## Arquitectura
 
@@ -33,7 +35,7 @@ TCP fornece um fluxo de bytes fiável e ordenado, mas não delimita mensagens. O
 ## Requisitos e compilação
 
 - JDK **21** completo (incluindo `javac`).
-- Maven 3.9 ou superior.
+- Maven 3.8.7 ou superior (3.9.9 na imagem Docker).
 - Docker Engine e Docker Compose para a demonstração em containers.
 
 Abra a pasta que contém `pom.xml`:
@@ -44,7 +46,7 @@ mvn test
 mvn package
 ```
 
-O JAR gerado é `target/quizrace.jar`. O projecto não tem dependências externas em runtime. Os testes de integração usam portas livres (`ServerSocket(0)`); é necessário permitir sockets locais no ambiente de testes.
+São gerados `target/quizrace.jar` (CLI/TCP) e `target/quizrace-api.jar` (API executável com dependências). O jogo TCP continua a executar sem PostgreSQL; a API precisa da configuração descrita no guia. Os testes de integração usam portas livres (`ServerSocket(0)`); é necessário permitir sockets locais no ambiente de testes.
 
 ## Menu e versão local
 
@@ -287,7 +289,7 @@ Os testes originais foram preservados; apenas a quantidade esperada de perguntas
 
 A implementação foi guardada em commits incrementais: base TCP, jogo sincronizado, benchmark e execução em containers. Consulte `git log --oneline` e [a validação](docs/VALIDACAO.md).
 
-## Limitações e próximas melhorias
+## Limitações do jogo TCP e próximas melhorias
 
 - Uma sala e uma partida por processo de servidor; sem reconexão, múltiplas salas ou persistência. Reinicie para nova partida.
 - Sem TLS/autenticação; apropriado para ambiente académico controlado. O limite de linhas e clientes não substitui protecção contra abuso. Escritas TCP são bloqueantes; um cliente que nunca leia pode atrasar a distribuição.
@@ -297,14 +299,14 @@ A implementação foi guardada em commits incrementais: base TCP, jogo sincroniz
 - O benchmark é de carga CPU simulada, separado do desempenho do jogo interactivo.
 - Futuro: novas salas, recuperação de ligação, saída de rede com prazo, autenticação e medições mais rigorosas com JMH.
 
-### Ferramentas temporárias desta sessão
+### Ferramentas instaladas
 
-O computador não tinha Maven nem JDK completo. Para repetir as validações enquanto as pastas temporárias existirem:
+Maven e JDK 21 foram instalados no sistema em 21 de Outubro de 2026. Seleccione Java 21 no terminal:
 
 ```bash
-export JAVA_HOME=/tmp/quizrace-jdk
-export PATH="/tmp/apache-maven-3.9.9/bin:$JAVA_HOME/bin:$PATH"
-mvn -Dmaven.repo.local=/tmp/quizrace-m2 test
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+export PATH="$JAVA_HOME/bin:$PATH"
+mvn clean verify
 ```
 
-A opção de repositório local também pode ser acrescentada aos restantes comandos. `/tmp` pode ser limpo pelo sistema; para uso permanente, instale JDK 21 e Maven. Docker não depende dessas instalações temporárias.
+As instruções da API e os resultados desta entrega estão em [execução](docs/08-instalacao-e-execucao.md) e [testes](docs/07-testes.md). Docker não depende do Maven instalado no host.
