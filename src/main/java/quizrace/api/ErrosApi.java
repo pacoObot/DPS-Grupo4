@@ -16,6 +16,10 @@ public class ErrosApi {
         HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
     ResponseEntity<?> invalidos(Exception e) { return erro(400, "DADOS_INVALIDOS", "Verifique os dados enviados."); }
 
+    @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
+    ResponseEntity<?> versaoDesactualizada(Exception e) {
+        return erro(409, "VERSAO_DESACTUALIZADA", "Este teste foi alterado noutra janela. Consulte a versão guardada antes de voltar a editar.");
+    }
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<?> duplicado(DataIntegrityViolationException e) {
         return erro(409, "CONFLITO", "Já existe um utilizador com esse email ou os dados violam uma restrição.");

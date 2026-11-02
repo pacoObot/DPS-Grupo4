@@ -45,6 +45,7 @@ public class Seguranca {
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/auth/login").permitAll()
                 .requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMINISTRADOR")
                 .requestMatchers("/api/v1/auth/me").authenticated()
+                .requestMatchers("/api/v1/testes", "/api/v1/testes/**").hasRole("DOCENTE")
                 .anyRequest().denyAll())
             .oauth2ResourceServer(o -> o
                 .authenticationEntryPoint((req, res, ex) -> erro(res, 401, "NAO_AUTENTICADO"))
