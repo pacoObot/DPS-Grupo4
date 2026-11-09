@@ -50,7 +50,7 @@ web/
 └── package-lock.json
 ```
 
-O administrador cria contas e altera perfil/estado. Docentes e estudantes têm a visão geral e os dados da própria conta. O servidor valida sempre as permissões; ocultar um botão no navegador não concede nem retira privilégios na API.
+O administrador cria contas e altera perfil/estado. Docentes têm também **Os meus testes**, com editor e histórico descritos no [guia de preparação](14-preparacao-testes.md). Estudantes têm a visão geral e os dados da própria conta. O servidor valida sempre as permissões; ocultar um botão no navegador não concede nem retira privilégios na API.
 
 O JWT fica apenas em memória. Ao sair, recarregar, expirar o prazo ou receber 401, a interface volta ao login. Ao recuperar o foco da janela, consulta a identidade para detectar revogação. Um 403 apresenta erro de permissão; um 409 apresenta o conflito informado pelo servidor, por exemplo email duplicado ou último administrador activo. Alterar a própria conta termina a sessão. O logout é local: o token continua válido no servidor até expirar ou ser revogado por alteração de conta.
 
@@ -64,4 +64,4 @@ O JWT fica apenas em memória. Ao sair, recarregar, expirar o prazo ou receber 4
 6. Recarregar a página: deve ser necessário entrar novamente.
 7. Repetir com janela estreita e verificar que os controlos continuam acessíveis.
 
-Os resultados observados e os limites da validação estão em [07-testes.md](07-testes.md). Perguntas, quizzes, avaliações e resultados web ficam para as fases seguintes.
+Os resultados observados e os limites da validação estão em [07-testes.md](07-testes.md). Perguntas e testes em rascunho estão disponíveis na Fase 4A. Salas, avaliações em tempo real e resultados ficam para as fases seguintes.

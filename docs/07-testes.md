@@ -70,3 +70,20 @@ Frontend: `npm run build` concluiu a verificação TypeScript e o build Vite. En
 Este ensaio de navegador não é uma suite automatizada versionada nem substitui o ensaio PostgreSQL descrito acima. Não foi feita medição de carga nem aguardada a expiração real de 15 minutos nesta sessão.
 
 A imagem `quizrace-web:validacao` também foi construída com sucesso usando `Dockerfile.web`. A configuração Nginx passou `nginx -t` num container temporário. A composição API + web passou `docker compose ... config --quiet`; a stack completa PostgreSQL/API/Nginx não foi iniciada neste ensaio da interface.
+
+## Continuação — 9 de Novembro de 2026
+
+Validação das salas de teste, quizzes de treino e acesso por rede local:
+
+- `mvn clean verify`: **48 testes, zero falhas e zero erros; BUILD SUCCESS**, com JDK 21. A suite inclui API de testes/salas/treino e integração TCP.
+- `npm run build`: TypeScript e Vite concluíram. `npm run format:check`: Prettier sem diferenças.
+- `docker compose ... up --build -d`: API, PostgreSQL 17 e Nginx arrancaram; Flyway aplicou V2, V3 e V4 sobre o volume já existente, sem o recriar.
+- Ensaio Playwright na interface: login docente, criação de teste A–D + verdadeiro/falso, criação de sala, estudante pede entrada, docente valida, respostas avançam por pergunta, monitor mostra presença/progresso/cursor, docente encerra e consulta 100%/lista imprimível.
+- O estudante autenticado abriu o quiz de treino, submeteu respostas, viu feedback e encontrou a tentativa no histórico.
+- O frontend foi aberto pelo IP local `192.168.1.250`; a sala gerou `http://192.168.1.250:3000/sala/jdBZxYykpPKH`, a página pública foi carregada por esse endereço e a docente validou a entrada. Este ensaio usou contextos de navegador separados no mesmo computador, não um telefone físico.
+
+O serviço web está publicado em `0.0.0.0:3000` para permitir acesso na rede privada local. O IP pode mudar; confirme-o com `hostname -I`. O firewall deve permitir a porta 3000 na rede privada. A impressão foi verificada pela lista/botão disponível; o diálogo físico de impressão não foi iniciado.
+
+### Limites actuais
+
+O acompanhamento actualiza por polling a cada dois segundos, sem WebSocket. A categoria do dispositivo é aproximada pelo user agent e não comprova identidade. Não foram feitos ensaios em dispositivos físicos diferentes nem testes de carga. A porta não deve ser encaminhada para a Internet.

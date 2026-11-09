@@ -73,3 +73,35 @@ Formato: `{"codigo":"DADOS_INVALIDOS","mensagem":"Verifique os dados enviados."}
 | 409 | email duplicado ou tentativa de remover último administrador |
 
 O login não distingue email inexistente de palavra-passe errada. Não se devolvem detalhes SQL ou stack traces. Endpoints não previstos são recusados por defeito.
+
+## Preparação de testes — Fase 4A
+
+Todas as rotas abaixo exigem `DOCENTE`, filtram pelo UUID autenticado e devolvem `Cache-Control: no-store`. Outro docente recebe 404; estudante/administrador recebe 403. Nenhum endpoint público entrega perguntas ou gabarito nesta fase.
+
+| Método / rota | Resultado |
+| --- | --- |
+| GET /testes?page=0&size=10 | Resumos dos testes do docente, mais recentes primeiro; size 1–50 |
+| POST /testes | 201, detalhe e Location; sem campo versao |
+| GET /testes/{id} | Detalhe completo do rascunho |
+| PUT /testes/{id} | Substitui conteúdo/ordem, exige a versao recebida na leitura |
+| GET /testes/{id}/historico?page=0&size=10 | Versões e datas, da mais recente para a mais antiga |
+| GET /testes/{id}/historico/{versao} | Cópia histórica completa, apenas de leitura |
+
+Exemplo de criação:
+
+```json
+{
+  "titulo": "Teste 1 — Java",
+  "descricao": "Seleccione uma alternativa por pergunta.",
+  "perguntas": [{
+    "enunciado": "Qual linguagem usamos no projecto?",
+    "alternativaA": "Java", "alternativaB": "Python",
+    "alternativaC": "C", "alternativaD": "Rust",
+    "correcta": "A", "categoria": "DPS"
+  }]
+}
+```
+
+Título: 1–150 caracteres não vazios; descrição opcional até 2000. De 0 a 50 perguntas, enunciado não vazio até 2000, alternativas não vazias até 500, categoria opcional até 100. `correcta` aceita A/B/C/D. Valores textuais são aparados nas extremidades. O dono é sempre obtido do token; campos desconhecidos são rejeitados.
+
+O detalhe acrescenta `id`, `versao`, `criadoEm` e `actualizadoEm`. A versão de API começa em 0; a interface apresenta-a a partir de 1. No PUT enviar apenas título, descrição, perguntas e versão, não o DTO inteiro. Versão ausente é 400; versão desactualizada ou conflito concorrente é 409. A gravação devolve a nova versão. As páginas seguem `{content,page,size,totalElements}`. As cópias históricas conservam também as respostas correctas e pertencem ao mesmo docente.

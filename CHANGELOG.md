@@ -1,5 +1,22 @@
 # Histórico de alterações
 
+## 2026-11-09 — Salas de avaliação e quizzes de preparação
+
+- Testes docentes suportam escolha múltipla e verdadeiro/falso e podem ser disponibilizados como quizzes de treino.
+- Salas com URL própria, pedido de entrada pelo estudante e validação da docente.
+- Perguntas apresentadas por etapas com temporizador controlado no servidor e respostas sem exposição do gabarito.
+- Monitor periódico com presença, dispositivo aproximado, progresso e cursor/toque; encerramento, notas e impressão.
+- Histórico de tentativas de treino; documentação do percurso e roteiro de apresentação actualizados.
+- Suite completa com 48 testes; build da interface verificado.
+
+## 2026-11-02 — Preparação de testes pelo docente (Fase 4A)
+
+- Rascunhos com título, instruções e até 50 perguntas A–D, resposta correcta e categoria.
+- Acesso aos testes e gabaritos limitado ao docente dono, aplicado na API.
+- Gravação transaccional, histórico de versões e conflitos de edição protegidos por versão optimista.
+- Editor com ordenação, remoção, pré-visualização e consulta do histórico.
+- Plano actualizado para sala por URL, identificação académica, acompanhamento e impressão de notas.
+
 ## 2026-10-30 — Interface académica (Fase 3)
 
 - React/TypeScript com login, área pessoal e navegação por perfil.

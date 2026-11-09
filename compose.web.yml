@@ -5,6 +5,6 @@ services:
       context: .
       dockerfile: Dockerfile.web
     ports:
-      - "127.0.0.1:${QUIZ_WEB_PORT:-3000}:80"
+      - "${QUIZ_WEB_BIND:-0.0.0.0}:${QUIZ_WEB_PORT:-3000}:80"
     depends_on:
       - api

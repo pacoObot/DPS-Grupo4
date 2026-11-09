@@ -107,7 +107,7 @@ java -jar target/quizrace-api.jar
 
 O ficheiro `.env` é lido pelo Compose, não automaticamente pelo Java. Para o jogo de terminal, continuam válidos `mvn exec:java` e os comandos TCP do README.
 
-## Interface web (Fase 3)
+## Interface web e acesso dos estudantes
 
 Com o mesmo `.env`, iniciar os três serviços:
 
@@ -115,7 +115,7 @@ Com o mesmo `.env`, iniciar os três serviços:
 docker compose -f compose.api.yml -f compose.web.yml up --build -d
 ```
 
-Abra http://localhost:3000. `QUIZ_WEB_PORT` altera esta porta. Entre com a conta administrativa usada no bootstrap; em **Utilizadores**, crie as contas dos colegas. Docentes e estudantes consultam a sua própria conta. O cadastro de perguntas e as avaliações ainda pertencem às próximas fases.
+Abra http://localhost:3000. `QUIZ_WEB_PORT` altera esta porta. Entre com a conta docente já criada (ou use a conta administrativa para criar docentes/estudantes). O docente cria testes em **Os meus testes**, abre uma sala e partilha o link; o estudante abre o endereço, informa nome ou número académico e aguarda aprovação. O monitor mostra presença e progresso e permite encerrar, ver notas e imprimir a lista. Estudantes autenticados também podem praticar com os quizzes disponibilizados.
 
 Para encerrar mantendo os dados:
 
@@ -123,4 +123,11 @@ Para encerrar mantendo os dados:
 docker compose -f compose.api.yml -f compose.web.yml down
 ```
 
-As portas estão publicadas apenas em localhost. Para esta entrega, teste no computador que executa os serviços. A ligação dos colegas ao jogo TCP continua descrita no README. Consulte [13-interface-web.md](13-interface-web.md) para desenvolvimento e validação da interface.
+Por omissão, a interface fica acessível na rede local. Descubra o IP do computador docente e confirme que o firewall permite a porta 3000 na rede privada:
+
+```bash
+docker compose -f compose.api.yml -f compose.web.yml up --build -d
+hostname -I
+```
+
+Abra `http://IP-LOCAL:3000` no computador docente e nos dispositivos estudantes; crie a sala a partir do endereço com IP para o link partilhado ser acessível. Exemplo: `http://192.168.1.20:3000/sala/CODIGO`. Para restringir novamente a localhost, configure `QUIZ_WEB_BIND=127.0.0.1` no ambiente do Compose. A exposição destina-se à rede privada local; não encaminhe a porta para a Internet. Consulte [13-interface-web.md](13-interface-web.md) e o [roteiro da demonstração](14-preparacao-testes.md).

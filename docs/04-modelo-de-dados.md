@@ -29,4 +29,12 @@ O email é normalizado para minúsculas, com unicidade e restrição no banco. O
 
 O PostgreSQL fica num volume Docker nomeado. `docker compose -f compose.api.yml down` preserva esse volume; `down -v` apaga os dados e não deve ser usado para encerrar a instalação normal.
 
-Perguntas continuam no ficheiro de recursos. Partidas, resultados, avaliações e salas ainda não são persistidos; serão modelados nas fases correspondentes. Não se deve confundir os dados de conta com o estado efémero de `Jogador`.
+As perguntas do jogo TCP continuam no ficheiro de recursos. Partidas, resultados e salas académicas ainda não são persistidos; serão modelados nas fases correspondentes. Não se deve confundir os dados de conta com o estado efémero de `Jogador`.
+
+## Preparação de testes — migração V2
+
+- `teste`: UUID, dono (`docente_id`, chave estrangeira para utilizador), título, descrição, datas e versão optimista JPA.
+- `teste_questao`: lista ordenada de perguntas dependentes do rascunho, com chave `(teste_id, ordem)`, enunciado, alternativas A–D, resposta correcta e categoria. As posições não são identidades estáveis de respostas de estudantes; a futura sala deverá usar a cópia publicada do teste.
+- `teste_revisao`: cópias JSON completas de cada gravação, com UUID, teste, versão única e data. O histórico é apenas de leitura; uma gravação falhada não deixa uma revisão parcial.
+
+A migração acrescenta tabelas; não altera nem apaga contas existentes. O controlo optimista e a gravação do histórico pertencem à mesma transacção. As respostas HTTP são DTOs; nenhuma destas rotas é acessível a estudantes ou administradores.
