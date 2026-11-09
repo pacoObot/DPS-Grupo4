@@ -4,16 +4,41 @@ import type { Sessao, Utilizador } from "./api";
 import { Logo } from "./components/Logo";
 import { Login } from "./components/Login";
 import { Utilizadores } from "./components/Utilizadores";
+import { Testes } from "./components/Testes";
+import { SalasDocente } from "./components/SalasDocente";
+import { QuizPratica } from "./components/QuizPratica";
 
 export function App() {
   // O token fica apenas em memória; recarregar a página exige novo login.
   const [sessao, setSessao] = useState<Sessao | null>(null);
   const [aviso, setAviso] = useState("");
   const [vista, setVista] = useState("inicio");
+  const [testeParaSala, setTesteParaSala] = useState<string | null>(null);
+  const [edicaoPendente, setEdicaoPendente] = useState(false);
+  function navegar(destino: string) {
+    if (destino === vista) return;
+    if (
+      edicaoPendente &&
+      !window.confirm("Sair do editor e perder as alterações não guardadas?")
+    )
+      return;
+    setEdicaoPendente(false);
+    setVista(destino);
+    setAviso("");
+  }
+  function terminarSessao() {
+    if (
+      edicaoPendente &&
+      !window.confirm("Terminar sessão e perder as alterações não guardadas?")
+    )
+      return;
+    sair();
+  }
   const geracao = useRef(0);
   const sair = (mensagem = "") => {
     geracao.current++;
     setSessao(null);
+    setEdicaoPendente(false);
     setVista("inicio");
     setAviso(mensagem);
   };
@@ -84,7 +109,7 @@ export function App() {
           <button
             className={vista === "inicio" ? "selected" : ""}
             onClick={() => {
-              setVista("inicio");
+              navegar("inicio");
               setAviso("");
             }}
           >
@@ -94,17 +119,41 @@ export function App() {
             <button
               className={vista === "utilizadores" ? "selected" : ""}
               onClick={() => {
-                setVista("utilizadores");
+                navegar("utilizadores");
                 setAviso("");
               }}
             >
               ♧ <span>Utilizadores</span>
             </button>
           )}
+          {u.perfil === "DOCENTE" && (
+            <button
+              className={vista === "salas" ? "selected" : ""}
+              onClick={() => navegar("salas")}
+            >
+              ◉ <span>Salas de teste</span>
+            </button>
+          )}
+          {u.perfil === "ESTUDANTE" && (
+            <button
+              className={vista === "quizzes" ? "selected" : ""}
+              onClick={() => navegar("quizzes")}
+            >
+              ✎ <span>Preparar quiz</span>
+            </button>
+          )}
+          {u.perfil === "DOCENTE" && (
+            <button
+              className={vista === "testes" ? "selected" : ""}
+              onClick={() => navegar("testes")}
+            >
+              ▤ <span>Os meus testes</span>
+            </button>
+          )}
           <button
             className={vista === "conta" ? "selected" : ""}
             onClick={() => {
-              setVista("conta");
+              navegar("conta");
               setAviso("");
             }}
           >
@@ -119,7 +168,7 @@ export function App() {
           </div>
           <button
             className="logout"
-            onClick={() => sair()}
+            onClick={terminarSessao}
             aria-label="Terminar sessão"
           >
             ↗
@@ -136,12 +185,18 @@ export function App() {
                 ? "Utilizadores"
                 : vista === "conta"
                   ? "A minha conta"
-                  : "Visão geral"}
+                  : vista === "testes"
+                    ? "Os meus testes"
+                    : vista === "salas"
+                      ? "Salas de teste"
+                      : vista === "quizzes"
+                        ? "Preparar quiz"
+                        : "Visão geral"}
             </span>
           </span>
           <div className="header-actions">
             <span className="pill">{perfis[u.perfil]}</span>
-            <button className="text-button" onClick={() => sair()}>
+            <button className="text-button" onClick={terminarSessao}>
               Sair
             </button>
           </div>
@@ -175,14 +230,32 @@ export function App() {
                   <p>
                     {u.perfil === "ADMINISTRADOR"
                       ? "Organize o acesso da comunidade académica. Crie contas e atribua o perfil adequado a cada pessoa."
-                      : "A sua conta está pronta. Consulte os seus dados e mantenha contacto com o responsável da sua instituição."}
+                      : u.perfil === "DOCENTE"
+                        ? "Prepare testes, partilhe uma sala e acompanhe a participação. Consulte as versões guardadas."
+                        : "Pratique com quizzes e acompanhe a sua preparação. Nas avaliações, acompanhe o teste através do link partilhado pela docente."}
                   </p>
                   {u.perfil === "ADMINISTRADOR" && (
                     <button
                       className="primary"
-                      onClick={() => setVista("utilizadores")}
+                      onClick={() => navegar("utilizadores")}
                     >
                       Gerir utilizadores <span>↗</span>
+                    </button>
+                  )}
+                  {u.perfil === "ESTUDANTE" && (
+                    <button
+                      className="primary"
+                      onClick={() => navegar("quizzes")}
+                    >
+                      Praticar um quiz <span>↗</span>
+                    </button>
+                  )}
+                  {u.perfil === "DOCENTE" && (
+                    <button
+                      className="primary"
+                      onClick={() => navegar("testes")}
+                    >
+                      Preparar um teste <span>↗</span>
                     </button>
                   )}
                 </div>
@@ -199,7 +272,7 @@ export function App() {
                   <p>{u.email}</p>
                   <button
                     className="text-button"
-                    onClick={() => setVista("conta")}
+                    onClick={() => navegar("conta")}
                   >
                     Consultar conta →
                   </button>
@@ -210,15 +283,18 @@ export function App() {
                   <p>
                     {u.perfil === "ADMINISTRADOR"
                       ? "Pode criar contas e gerir perfis e acesso."
-                      : "O seu acesso é definido pelo administrador."}
+                      : u.perfil === "DOCENTE"
+                        ? "Pode criar testes, partilhar salas e acompanhar os estudantes."
+                        : "Pode praticar com os quizzes que os docentes disponibilizam."}
                   </p>
                 </section>
                 <section className="card">
                   <span className="card-icon">↗</span>
                   <h3>Próximas etapas</h3>
                   <p>
-                    Preparação, avaliações e resultados serão disponibilizados
-                    numa fase seguinte.
+                    Participe num quiz de preparação ou use o link de sala
+                    enviado pela docente. As suas respostas são recebidas pelo
+                    servidor.
                   </p>
                 </section>
               </div>
@@ -251,6 +327,27 @@ export function App() {
                 </p>
               </section>
             </>
+          )}
+          {vista === "testes" && u.perfil === "DOCENTE" && (
+            <Testes
+              token={sessao.accessToken}
+              falha={falha}
+              mudou={setEdicaoPendente}
+              criarSala={(id) => {
+                setTesteParaSala(id);
+                navegar("salas");
+              }}
+            />
+          )}
+          {vista === "salas" && u.perfil === "DOCENTE" && (
+            <SalasDocente
+              token={sessao.accessToken}
+              seleccionado={testeParaSala}
+              falha={falha}
+            />
+          )}
+          {vista === "quizzes" && u.perfil === "ESTUDANTE" && (
+            <QuizPratica token={sessao.accessToken} falha={falha} />
           )}
           {vista === "utilizadores" && u.perfil === "ADMINISTRADOR" && (
             <Utilizadores

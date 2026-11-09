@@ -26,6 +26,27 @@ export function Login({
             Entre no seu espaço académico e faça parte da próxima etapa do
             QuizRace.
           </p>
+          <div className="public-guide">
+            <div>
+              <b>DOCENTE</b>
+              <span>
+                Prepara perguntas, configura uma sala e partilha o link.
+              </span>
+            </div>
+            <div>
+              <b>ESTUDANTE</b>
+              <span>
+                Entra após validação, responde e pode praticar com quizzes.
+              </span>
+            </div>
+            <div>
+              <b>ACOMPANHAMENTO</b>
+              <span>
+                A docente acompanha a presença e o progresso, encerra a sessão e
+                consulta as notas.
+              </span>
+            </div>
+          </div>
           <div className="story-line">
             <span>01</span> Aprender <span>02</span> Participar <span>03</span>{" "}
             Evoluir

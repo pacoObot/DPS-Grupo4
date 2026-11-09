@@ -32,6 +32,7 @@ export async function pedir<T>(
   metodo = "GET",
   dados?: unknown,
   signal?: AbortSignal,
+  cabecalhos: Record<string, string> = {},
 ): Promise<T> {
   let resposta: Response;
   try {
@@ -40,6 +41,7 @@ export async function pedir<T>(
       signal,
       cache: "no-store",
       headers: {
+        ...cabecalhos,
         ...(token ? { Authorization: "Bearer " + token } : {}),
         ...(dados ? { "Content-Type": "application/json" } : {}),
       },
