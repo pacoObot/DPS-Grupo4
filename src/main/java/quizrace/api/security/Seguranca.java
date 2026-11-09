@@ -46,6 +46,10 @@ public class Seguranca {
                 .requestMatchers("/api/v1/users", "/api/v1/users/**").hasRole("ADMINISTRADOR")
                 .requestMatchers("/api/v1/auth/me").authenticated()
                 .requestMatchers("/api/v1/testes", "/api/v1/testes/**").hasRole("DOCENTE")
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/salas/entrada").permitAll()
+                .requestMatchers("/api/v1/salas/participacoes/**").permitAll()
+                .requestMatchers("/api/v1/salas", "/api/v1/salas/**").hasRole("DOCENTE")
+                .requestMatchers("/api/v1/quizzes/pratica", "/api/v1/quizzes/pratica/**").hasAnyRole("DOCENTE", "ESTUDANTE")
                 .anyRequest().denyAll())
             .oauth2ResourceServer(o -> o
                 .authenticationEntryPoint((req, res, ex) -> erro(res, 401, "NAO_AUTENTICADO"))

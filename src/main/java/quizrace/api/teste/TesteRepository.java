@@ -9,4 +9,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface TesteRepository extends JpaRepository<Teste, UUID> {
     Page<Teste> findByDocenteId(UUID docenteId, Pageable pagina);
     Optional<Teste> findByIdAndDocenteId(UUID id, UUID docenteId);
+    Page<Teste> findByDisponivelPraticaTrue(Pageable pagina);
+    Optional<Teste> findByIdAndDisponivelPraticaTrue(UUID id);
 }

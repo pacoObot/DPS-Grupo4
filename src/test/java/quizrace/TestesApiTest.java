@@ -56,7 +56,7 @@ class TestesApiTest {
     }
     Map<String, Object> pergunta(String enunciado) {
         return Map.of("enunciado", enunciado, "alternativaA", "Java", "alternativaB", "Python",
-                "alternativaC", "C", "alternativaD", "Rust", "correcta", "A", "categoria", "DPS");
+                "alternativaC", "C", "alternativaD", "Rust", "correcta", "A", "categoria", "DPS", "tipo", "MULTIPLA_ESCOLHA");
     }
     ObjectNode pedido() {
         return json.valueToTree(Map.of("titulo", "Teste DPS", "descricao", "Leia com atenção.",

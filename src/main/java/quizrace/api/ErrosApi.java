@@ -13,7 +13,8 @@ import org.springframework.web.server.ResponseStatusException;
 @RestControllerAdvice
 public class ErrosApi {
     @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class,
-        HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+        HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
+        org.springframework.web.bind.MissingRequestHeaderException.class})
     ResponseEntity<?> invalidos(Exception e) { return erro(400, "DADOS_INVALIDOS", "Verifique os dados enviados."); }
 
     @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
