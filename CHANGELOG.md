@@ -1,5 +1,12 @@
 # Histórico de alterações
 
+## 2026-11-09 — Demonstração com 20 perguntas
+
+- Quiz de apresentação actualizado para 20 perguntas de escolha múltipla e verdadeiro/falso, disponível também para prática.
+- Seis contas sintéticas de estudante preparadas para a apresentação.
+- Na sala de avaliação, tocar ou clicar numa alternativa envia a resposta imediatamente e abre a pergunta seguinte.
+- Roteiro de apresentação actualizado com as contas e o fluxo de resposta automática.
+
 ## 2026-11-09 — Salas de avaliação e quizzes de preparação
 
 - Testes docentes suportam escolha múltipla e verdadeiro/falso e podem ser disponibilizados como quizzes de treino.

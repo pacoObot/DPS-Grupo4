@@ -40,6 +40,7 @@ export function SalaPublica({ codigo }: { codigo: string }) {
     [estado, setEstado] = useState<Estado | null>(null),
     [erro, setErro] = useState(""),
     [ocupado, setOcupado] = useState(false),
+    [respostaEnviada, setRespostaEnviada] = useState(false),
     [escolha, setEscolha] = useState(""),
     [tempo, setTempo] = useState(0),
     [relogio, setRelogio] = useState(0);
@@ -68,6 +69,7 @@ export function SalaPublica({ codigo }: { codigo: string }) {
             perguntaActual.current = e.pergunta.numero;
             setEscolha("");
             setTempo(e.pergunta.segundosRestantes);
+            setRespostaEnviada(false);
             submetida.current = false;
           }
         } else if (e.estado === "FECHADO")
@@ -101,11 +103,12 @@ export function SalaPublica({ codigo }: { codigo: string }) {
   useEffect(() => {
     if (tempo !== 0 || !estado?.pergunta || !credencial || submetida.current)
       return;
-    submetida.current = true;
     void enviar(null);
   }, [tempo]);
   async function enviar(resposta: string | null) {
-    if (!credencial || !estado?.pergunta || ocupado) return;
+    if (!credencial || !estado?.pergunta || ocupado || submetida.current)
+      return;
+    submetida.current = true;
     setOcupado(true);
     try {
       await pedir(
@@ -116,10 +119,14 @@ export function SalaPublica({ codigo }: { codigo: string }) {
         undefined,
         { "X-Quiz-Participante": credencial.token },
       );
+      setRespostaEnviada(true);
       setEscolha("");
       setErro("");
       setRelogio((v) => v + 1);
     } catch (e) {
+      submetida.current = false;
+      setRespostaEnviada(false);
+      if (resposta !== null) setEscolha("");
       setErro(
         e instanceof Error
           ? e.message
@@ -290,20 +297,24 @@ export function SalaPublica({ codigo }: { codigo: string }) {
                     name="resposta"
                     value={o.codigo}
                     checked={escolha === o.codigo}
-                    onChange={() => setEscolha(o.codigo)}
+                    disabled={ocupado || respostaEnviada || tempo <= 0}
+                    onChange={() => {
+                      setEscolha(o.codigo);
+                      void enviar(o.codigo);
+                    }}
                   />
                   <b>{o.codigo}</b>
                   {o.texto}
                 </label>
               ))}
             </div>
-            <button
-              className="primary wide"
-              disabled={ocupado || !escolha || tempo <= 0}
-              onClick={() => void enviar(escolha)}
-            >
-              {ocupado ? "A registar…" : "Registar resposta →"}
-            </button>
+            <small role="status">
+              {ocupado
+                ? "A resposta está a ser registada…"
+                : respostaEnviada
+                  ? "Resposta registada. A pergunta seguinte será apresentada automaticamente."
+                  : "Seleccione uma alternativa para a enviar automaticamente."}
+            </small>
             <small>
               O seu cursor ou toque aparece na área da pergunta, para a docente
               acompanhar a actividade.

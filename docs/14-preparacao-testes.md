@@ -19,7 +19,7 @@ Este guia descreve o fluxo pronto para demonstrar em sala: preparar perguntas, a
 1. Abra o endereço partilhado, por exemplo `http://localhost:3000/sala/CODIGO`.
 2. Escreva o nome **ou** o número de registo académico. O valor serve para identificar e validar a entrada nesta sala.
 3. Aguarde a aprovação da docente. A página verifica o estado da entrada automaticamente.
-4. Depois de aprovado, responda às perguntas antes do temporizador chegar a zero. O servidor regista a resposta; quando o prazo termina, a pergunta fica errada e o teste avança.
+4. Depois de aprovado, seleccione uma alternativa antes do temporizador chegar a zero. A resposta é enviada automaticamente e a pergunta seguinte abre; quando o prazo termina, a resposta fica errada e o teste avança.
 5. No fim, aguarde a docente encerrar a sala. A nota final fica visível ao estudante após o encerramento.
 
 O estudante não precisa de criar sessão nem recebe o gabarito durante o teste. O navegador mantém a participação apenas na sessão desse separador. A página informa que o painel docente mostra o tipo aproximado de dispositivo, o progresso e a posição do cursor/toque na área da pergunta.
@@ -39,13 +39,28 @@ As notas só são reveladas no monitor após encerrar a sala. Pedidos ainda pend
 
 O estudante entra na sua conta, abre **Preparar quiz**, escolhe um quiz disponibilizado por um docente e responde a todas as perguntas. No fim, vê a nota e o feedback, e pode consultar o histórico das tentativas. As respostas correctas não são enviadas antes da submissão.
 
+## Contas para a apresentação
+
+Foram preparadas seis contas de estudante para demonstrar quizzes de preparação. Todas usam a palavra-passe `QuizRaceDemo2026!`:
+
+| Nome | Conta |
+| --- | --- |
+| Ana Mucavele | `demo-estudante-01@quizrace.local` |
+| Bruno Chissano | `demo-estudante-02@quizrace.local` |
+| Carla Mussa | `demo-estudante-03@quizrace.local` |
+| Daniel Matola | `demo-estudante-04@quizrace.local` |
+| Elisa Nhampossa | `demo-estudante-05@quizrace.local` |
+| Fábio Manjate | `demo-estudante-06@quizrace.local` |
+
+Para a avaliação ao vivo, os seis estudantes podem abrir a mesma URL da sala e pedir entrada com o nome ou número académico; não precisam de iniciar sessão. A docente valida cada pedido. As contas acima servem para entrar no espaço académico e demonstrar quizzes de preparação.
+
 ## Sequência sugerida para a apresentação
 
-1. Como docente, criar um teste curto com uma pergunta de escolha múltipla e uma de verdadeiro/falso.
+1. Como docente, criar ou abrir o teste simulado com 20 perguntas de escolha múltipla e verdadeiro/falso.
 2. Criar a sala e projectar o link/URL.
 3. Abrir o link numa janela privada ou noutro dispositivo e pedir entrada como estudante.
 4. Mostrar o pedido pendente no monitor e aprová-lo.
-5. Responder a uma pergunta enquanto se observa o progresso/cursor no monitor; opcionalmente deixar outra pergunta expirar.
+5. Seleccionar uma resposta sem carregar num botão de submissão e observar a pergunta seguinte e o progresso/cursor no monitor; opcionalmente deixar outra pergunta expirar.
 6. Encerrar a sessão, mostrar as notas finais e abrir a impressão.
 7. Opcionalmente, disponibilizar um teste como treino, entrar com uma conta estudante e mostrar o feedback e o histórico.
 
